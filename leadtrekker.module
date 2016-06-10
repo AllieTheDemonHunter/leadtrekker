@@ -184,7 +184,15 @@ function leadtrekker_webform_submission_insert($node, $submission) {
   $webform_fields = [];
 
   foreach ($submission->data as $cid => $value) {
+    if (is_null($value[0])) {
+      $submitted_value = $value['value'][0];
+    }
+    else {
+      $submitted_value = $value[0];
+    }
+
     if ($node->webform['components'][$cid]['extra']['leadtrekker'] == "1") {
+
       //Check the defined data type fo the webform field.
       $data_type = $node->webform['components'][$cid]['type'];
 
@@ -199,8 +207,15 @@ function leadtrekker_webform_submission_insert($node, $submission) {
       }
       else {
         $field_key = $leadtrekker_webform_component_primary; //Required Leadtrekker field.
-        $webform_fields[$field_key] = $value[0];
+        //$webform_fields[$field_key] = $value[0];
+        if ($leadtrekker_webform_component_primary == 'leadname' && isset($webform_fields[$field_key])) {
+          $webform_fields[$field_key] = $webform_fields[$field_key] . " " . $submitted_value;
+        } else {
+          $webform_fields[$field_key] = $submitted_value;
+        }
       }
+
+
 
       if(!empty($submission->file_usage['added_fids']) && $data_type == 'file') {
         $upload_files = file_load_multiple($submission->file_usage['added_fids']);
@@ -234,7 +249,7 @@ function _leadtrekker_value($element, $input = FALSE, $form_state = array()) {
   if ($input === FALSE) {
     return isset($element['#default_value']) ? $element['#default_value'] : 0;
   }
-  else {
+  elseif(isset($form_state['build_info']['args'][1]['cid'])) {
     variable_set('leadtrekker_webform_component_key_' . $form_state['build_info']['args'][1]['cid'], $input);
   }
 
@@ -245,7 +260,7 @@ function _leadtrekker_value_primary($element, $input = FALSE, $form_state = arra
   if ($input === FALSE) {
     return isset($element['#default_value']) ? $element['#default_value'] : 3;
   }
-  else {
+  elseif(isset($form_state['build_info']['args'][1]['cid'])) {
     variable_set('leadtrekker_webform_component_primary_' . $form_state['build_info']['args'][1]['cid'], $input);
   }
 
