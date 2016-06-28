@@ -8,7 +8,7 @@
 namespace leadtrekker;
 
 interface lead_trekker {
-  public function __construct($leadtrekker_api_key, $source_id, $lead_data, $debug = FALSE);
+  public function __construct($leadtrekker_api_key, $source_id, $lead_data, $send_mail = TRUE, $debug = FALSE);
 
   public function __destruct();
 

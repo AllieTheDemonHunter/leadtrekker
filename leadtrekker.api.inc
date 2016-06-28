@@ -9,6 +9,7 @@
 const CREATE_LEAD = "createlead";
 const ADD_FIELD_TO_LEAD = "addcustomfield";
 const SEND_MAIL = "notifybyemail";
+const CREATE_ACCOUNT = "createaccount";
 
 const LEADTREKKER_URL = "https://my.leadtrekker.co.za/api.php";
 const LEADTREKKER_URL_DEBUG = "http://dev-leadtrekker.starbright.co.za/api.php";
@@ -21,18 +22,18 @@ class lead_trekker implements \leadtrekker\lead_trekker {
   public $lead_id = FALSE;
   private $curl_resource;
   protected $leadtrekker_api_key = LEADTREKKER_KEY_DEBUG;
-  protected $debug = false;
-
-  // Legacy.
-  var $send_mail = FALSE;
+  protected $debug = FALSE;
+  public $send_mail = TRUE;
 
   // Typically used to identify which webform Leadtrekker is dealing with.
   var $source_id;
   var $cookie_name = "leadtrekker";
   var $leadtrekker_api_url = LEADTREKKER_URL;
 
-  public function __construct($leadtrekker_api_key, $source_id, $lead_data, $debug = false) {
+  public function __construct($leadtrekker_api_key, $source_id, $lead_data, $send_mail = TRUE, $debug = FALSE) {
     $this->debug = $debug;
+    $this->send_mail = $send_mail;
+    
     if($this->debug) {
       $this->leadtrekker_api_url = LEADTREKKER_URL_DEBUG;
     }
@@ -41,22 +42,32 @@ class lead_trekker implements \leadtrekker\lead_trekker {
       $this->leadtrekker_api_key =  $leadtrekker_api_key;
     }
 
+    if($source_id == 'createaccount') {
+      $function = CREATE_ACCOUNT;
+    } else {
+      $function = CREATE_LEAD;
+    }
+    
     // Source ids are unique to webform instances.
-    $this->source_id = $source_id;
+    if (!$this->debug || !$source_id == 'createaccount') {
+      $this->source_id = $source_id;
+    } else {
+      $this->source_id = 1; // Development value.
+    }
 
     $this->curl_resource = $this->_connect(); // Once
     if (!$this->lead_id) {
 
-        if ($this->query(CREATE_LEAD, $lead_data)) {
+        if ($this->query($function, $lead_data)) {
 
-        //INJECT VARS FROM $_SESSION && #fields if set.
-        $this->leadtrekker_inject_fields($lead_data);
+          //INJECT VARS FROM $_SESSION && #fields if set.
+          $this->leadtrekker_inject_fields($lead_data);
 
-        if ($this->send_mail) {
-          $this->query(SEND_MAIL);
-        }
+          if ($this->send_mail) {
+            $this->query(SEND_MAIL);
+          }
 
-        return TRUE;
+          return TRUE;
       }
     }
 
@@ -73,8 +84,6 @@ class lead_trekker implements \leadtrekker\lead_trekker {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $this->leadtrekker_api_url);
     curl_setopt($ch, CURLOPT_POST, TRUE);
-    //curl_setopt($ch, CURLOPT_UPLOAD, TRUE);
-    //curl_setopt($ch, CURLOPT_SAFE_UPLOAD, TRUE);
     /**
      * @value CURLOPT_RETURNTRANSFER (bool) option below;
      * TRUE to return the transfer as a string of the return
@@ -96,7 +105,7 @@ class lead_trekker implements \leadtrekker\lead_trekker {
     $data["function"] = $function;
     $data['key'] = $this->leadtrekker_api_key;
     $data["sourceid"] = $this->source_id;
-    $data["sendemail"] = $this->send_mail;
+    $data["notifybyemail"] = $this->send_mail;
     if ($this->lead_id) {
       $data["leadid"] = $this->lead_id;
     }
@@ -125,15 +134,19 @@ class lead_trekker implements \leadtrekker\lead_trekker {
     }
 
     @curl_setopt($this->curl_resource, CURLOPT_POSTFIELDS, $post_string);
-    watchdog('leadtrekker', "Data to be posted: !data",array('!data' => print_r($post_string,1)));
 
     // The Leadtrekker Api should return an id.
     if (!$this->lead_id) {
       // Init call
       $this->lead_id = curl_exec($this->curl_resource);
+
+      // Checking for problems.
+      if (!is_numeric($this->lead_id)) {
+        print $this->lead_id; // Could contain an error message.
+        return FALSE;
+      }
     }
     elseif ($response = curl_exec($this->curl_resource)) {
-      watchdog('leadtrekker', "Data returned: !data", array('!data' => print_r($response, 1)));
       if ($response == "OK") {
         return TRUE;
       }
@@ -144,7 +157,6 @@ class lead_trekker implements \leadtrekker\lead_trekker {
 
     return TRUE;
   }
-
 
   /**
    * Function which considers $_SESSION data for injection
