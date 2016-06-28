@@ -142,7 +142,7 @@ class lead_trekker implements \leadtrekker\lead_trekker {
 
       // Checking for problems.
       if (!is_numeric($this->lead_id)) {
-        print $this->lead_id; // Could contain an error message.
+        $this->lead_id; // Could contain an error message.
         return FALSE;
       }
     }
