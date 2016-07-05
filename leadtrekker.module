@@ -216,7 +216,7 @@ function leadtrekker_webform_submission_insert($node, $submission) {
       // Check if this field is marked as a custom field.
       if ($leadtrekker_webform_component_primary == 'custom_field') {
         $field_key = $node->webform['components'][$cid]['name'];
-        $webform_fields['#fields'][$field_key] = $value[0];
+        $webform_fields['#fields'][$field_key] = $submitted_value;
       }
       else {
         $field_key = $leadtrekker_webform_component_primary; //Required Leadtrekker field.
