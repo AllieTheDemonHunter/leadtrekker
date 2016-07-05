@@ -95,13 +95,13 @@ function leadtrekker_form_webform_configure_form_alter(&$form, &$form_state, $fo
     '#type' => 'fieldset',
     '#title' => 'Web Services',
     '#default_value' => FALSE,
-    '#description' => 'Integrate this field with exposed web services.',
+    '#description' => 'Integrate this form with exposed web services.',
     '#weight' => 50,
     'leadtrekker_source_id' => array(
       '#type' => 'textfield',
-      '#title' => 'Leadtrekker',
+      '#title' => 'Leadtrekker Source ID',
       '#default_value' => variable_get('leadtrekker_webform_source_id_' . $form_state['build_info']['args'][0]->nid, ''),
-      '#description' => 'Include this field in Leadtrekker submissions.',
+      '#description' => 'Identifies this form in Leadtrekker. <a target="_blank" href="http://my.leadtrekker.com" title="Go to Leadtrekker (opens in new tab)"><em>(Sources can be setup within Leadtrekker.)</em></a>',
       '#weight' => 55,
       '#parents' => array('extra', 'leadtrekker'),
       '#disabled' => FALSE,
@@ -186,8 +186,13 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
  * Implements hook_webform_submission_insert().
  */
 function leadtrekker_webform_submission_insert($node, $submission) {
+
   global $_SESSION;
   include_once("leadtrekker.api.inc");
+
+  if($submission->is_draft != 0){
+    return;
+  }
 
   $webform_fields = [];
 
@@ -199,12 +204,12 @@ function leadtrekker_webform_submission_insert($node, $submission) {
       $submitted_value = $value[0];
     }
 
-    if ($node->webform['components'][$cid]['extra']['leadtrekker'] == "1") {
+    if (isset($node->webform['components'][$cid]['extra']['leadtrekker']) && $node->webform['components'][$cid]['extra']['leadtrekker'] === TRUE) {
 
       //Check the defined data type fo the webform field.
       $data_type = $node->webform['components'][$cid]['type'];
 
-      $leadtrekker_webform_component_primary_id = variable_get('leadtrekker_webform_component_primary_' . $cid, 3);
+      $leadtrekker_webform_component_primary_id = variable_get('leadtrekker_webform_component_' . $node->nid . '_primary_' . $cid, 3);
       $leadtrekker_field_types = _leadtrekker_component_field_match();
       $leadtrekker_webform_component_primary = $leadtrekker_field_types['options'][$leadtrekker_webform_component_primary_id];
 
@@ -222,8 +227,6 @@ function leadtrekker_webform_submission_insert($node, $submission) {
           $webform_fields[$field_key] = $submitted_value;
         }
       }
-
-
 
       if(!empty($submission->file_usage['added_fids']) && $data_type == 'file') {
         $upload_files = file_load_multiple($submission->file_usage['added_fids']);
@@ -246,7 +249,8 @@ function leadtrekker_webform_submission_insert($node, $submission) {
   if (!empty($webform_fields) && count($webform_fields) >= 3) {
     $leadtrekker_api_key = variable_get('leadtrekker_api_key', LEADTREKKER_KEY_DEBUG);
     $debug = variable_get('leadtrekker_debug', 0);
-    $lt = new lead_trekker($leadtrekker_api_key, $source_id, $webform_fields, $debug);
+    $send_mail = variable_get('leadtrekker_webform_notify_email_' . $node->nid, 1);
+    $lt = new lead_trekker($leadtrekker_api_key, $source_id, $webform_fields, $send_mail, $debug);
     unset($lt);
   } else {
     watchdog('leadtrekker', "Leadtrekker found eligible webform components, but no submission was sent. Check that these fields have their required Leadtrekker values set.");
@@ -268,7 +272,10 @@ function _leadtrekker_value_notify_mail($element, $input = FALSE, $form_state = 
   if ($input === FALSE) {
     return isset($element['#default_value']) ? $element['#default_value'] : 0;
   }
-  elseif (isset($form_state['build_info']['args'][1]['cid'])) {
+  else {
+    if($input === null) {
+      $input = 0;
+    }
     variable_set('leadtrekker_webform_notify_email_' . $form_state['build_info']['args'][0]->nid, $input);
   }
 
