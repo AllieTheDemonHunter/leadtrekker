@@ -301,7 +301,7 @@ function _leadtrekker_webform_source_id($element, $input = FALSE, $form_state = 
     variable_set('leadtrekker_webform_source_id_' . $form_state['build_info']['args'][0]->nid, $input);
   }
 
-  return FALSE§;
+  return FALSE;
 }
 
 /**
