@@ -13,7 +13,7 @@ const CREATE_ACCOUNT = "createaccount";
 
 const LEADTREKKER_URL = "https://my.leadtrekker.co.za/api.php";
 const LEADTREKKER_URL_DEBUG = "http://dev-leadtrekker.starbright.co.za/api.php";
-const LEADTREKKER_KEY_DEBUG = "D35069BC33A238B34";
+const LEADTREKKER_KEY_DEBUG = "KK3UY2WGD96II5GPNSWIG731";
 
 include_once("leadtrekker/lead_trekker.php");
 
