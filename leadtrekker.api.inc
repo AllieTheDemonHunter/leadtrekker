@@ -9,7 +9,8 @@
 const CREATE_LEAD = "createlead";
 const ADD_FIELD_TO_LEAD = "addcustomfield";
 const SEND_MAIL = "notifybyemail";
-const CREATE_ACCOUNT = "createaccount";
+const CREATEACCOUNT_ONLY_EMAIL = "createaccount_only_email";
+const CREATE_ACCOUNT = CREATEACCOUNT_ONLY_EMAIL; // This is because the createaccount method has been deprecated.
 
 const LEADTREKKER_URL = "https://my.leadtrekker.co.za/api.php";
 const LEADTREKKER_URL_DEBUG = "http://dev-leadtrekker.starbright.co.za/api.php";
@@ -42,14 +43,14 @@ class lead_trekker implements \leadtrekker\lead_trekker {
       $this->leadtrekker_api_key =  $leadtrekker_api_key;
     }
 
-    if($source_id == 'createaccount') {
-      $function = CREATE_ACCOUNT;
+    if($source_id == CREATEACCOUNT_ONLY_EMAIL) {
+      $function = CREATEACCOUNT_ONLY_EMAIL;
     } else {
       $function = CREATE_LEAD;
     }
     
     // Source ids are unique to webform instances.
-    if (!$this->debug || !$source_id == 'createaccount') {
+    if (!$this->debug || !$source_id == CREATEACCOUNT_ONLY_EMAIL) {
       $this->source_id = $source_id;
     } else {
       $this->source_id = 1; // Development value.
@@ -104,7 +105,7 @@ class lead_trekker implements \leadtrekker\lead_trekker {
 
     $data["function"] = $function;
     $data['key'] = $this->leadtrekker_api_key;
-    $data["sourceid"] = $this->source_id;
+    $data["sourceid"] = $this->source_id; // I believe that this is not required when submitting create account by email only.
     $data["notifybyemail"] = $this->send_mail;
     if ($this->lead_id) {
       $data["leadid"] = $this->lead_id;
