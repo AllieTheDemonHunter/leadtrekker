@@ -12,7 +12,7 @@ const SEND_MAIL = "notifybyemail";
 const CREATEACCOUNT_ONLY_EMAIL = "createaccount_only_email";
 const CREATE_ACCOUNT = CREATEACCOUNT_ONLY_EMAIL; // This is because the createaccount method has been deprecated.
 
-const LEADTREKKER_URL = "https://my.leadtrekker.co.za/api.php";
+const LEADTREKKER_URL = "http://my.leadtrekker.co.za/api.php";
 const LEADTREKKER_URL_DEBUG = "http://dev-leadtrekker.starbright.co.za/api.php";
 const LEADTREKKER_KEY_DEBUG = "KK3UY2WGD96II5GPNSWIG731";
 
@@ -95,7 +95,7 @@ class lead_trekker implements \leadtrekker\lead_trekker {
     if ($this->debug) {
       curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
     } else {
-      curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
     }
 
     return $ch;
