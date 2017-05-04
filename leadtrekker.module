@@ -8,16 +8,11 @@ function leadtrekker_boot() {
 
   if (isset($_SESSION['leadtrekker']) && !empty($_SESSION['leadtrekker'])) {
     // This data can now be used globally for any Leadtrekker submissions.
-  }
-  else {
-    watchdog('leadtrekker', "No Global Leadtrekker in session.", array(), WATCHDOG_NOTICE);
+      watchdog('leadtrekker', "Global Leadtrekker in session.", array(), WATCHDOG_NOTICE);
   }
 
   if ($_SERVER['QUERY_STRING'] != "") {
     _leadtrekker_recognise($_SERVER['QUERY_STRING']);
-  }
-  else {
-    watchdog('leadtrekker', "No query string in URL session found", array(), WATCHDOG_NOTICE);
   }
 }
 
