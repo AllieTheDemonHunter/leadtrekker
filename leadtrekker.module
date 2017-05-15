@@ -8,12 +8,17 @@ function leadtrekker_boot() {
 
   if (isset($_SESSION['leadtrekker']) && !empty($_SESSION['leadtrekker'])) {
     // This data can now be used globally for any Leadtrekker submissions.
-      watchdog('leadtrekker', "Global Leadtrekker in session.", array(), WATCHDOG_NOTICE);
+  }
+  else {
+    watchdog('leadtrekker', "No Global Leadtrekker in session.", array(), WATCHDOG_NOTICE);
   }
 
   if ($_SERVER['QUERY_STRING'] != "") {
     _leadtrekker_recognise($_SERVER['QUERY_STRING']);
   }
+  else {
+    watchdog('leadtrekker', "No query string in URL session found", array(), WATCHDOG_NOTICE);
+}
 }
 
 /**
@@ -194,6 +199,8 @@ function leadtrekker_webform_submission_insert($node, $submission) {
   foreach ($submission->data as $cid => $value) {
     if (is_null($value[0])) {
       $submitted_value = $value['value'][0];
+    } elseif (is_array($value) && $value[1] != null) {
+        $submitted_value = implode(", ", $value);
     }
     else {
       $submitted_value = $value[0];
