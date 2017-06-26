@@ -10,14 +10,14 @@ function leadtrekker_boot() {
     // This data can now be used globally for any Leadtrekker submissions.
   }
   else {
-    watchdog('leadtrekker', "No Global Leadtrekker in session.", [], WATCHDOG_NOTICE);
+    //watchdog('leadtrekker', "No Global Leadtrekker in session.", [], WATCHDOG_NOTICE);
   }
 
   if ($_SERVER['QUERY_STRING'] != "") {
     _leadtrekker_recognise($_SERVER['QUERY_STRING']);
   }
   else {
-    watchdog('leadtrekker', "No query string in URL session found", [], WATCHDOG_NOTICE);
+    //watchdog('leadtrekker', "No query string in URL session found", [], WATCHDOG_NOTICE);
   }
 }
 
