@@ -22,6 +22,7 @@ function leadtrekker_menu() {
     'page arguments' => ['leadtrekker_admin_settings_form'],
     'access arguments' => ['administer leadtrekker'],
     'type' => MENU_NORMAL_ITEM,
+      'file' => 'leadtrekker.admin.inc'
   ];
   return $items;
 }
