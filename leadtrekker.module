@@ -202,7 +202,7 @@ function leadtrekker_webform_submission_insert($node, $submission) {
 
   if (!empty($webform_fields) && count($webform_fields) >= 3) {
     $send_mail = variable_get('leadtrekker_webform_notify_email_' . $node->nid, 1);
-    send_lead($source_id, $data, $send_mail);
+    send_lead($source_id, $webform_fields, $send_mail);
   }
   else {
     watchdog('leadtrekker', "Leadtrekker found eligible webform components, but no submission was sent. Check that these fields have their required Leadtrekker values set.");
