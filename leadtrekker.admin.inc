@@ -8,7 +8,7 @@ function leadtrekker_admin_settings_form() {
     '#type' => 'textfield',
     '#title' => t('Leadtrekker API Key'),
     '#multiple' => FALSE,
-    '#description' => t('This key will be provided by <a href="http://www.starbright.co.za" title="Get your Leadtrekker subscription.">Starbright</a>.<br>Use <pre>D35069BC33A238B34</pre> when in developer mode.'),
+    '#description' => t('This key will be provided by <a href="http://www.starbright.co.za" title="Get your Leadtrekker subscription.">Starbright</a>.'),
     '#default_value' => variable_get('leadtrekker_api_key', ''),
   ];
 
