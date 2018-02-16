@@ -167,8 +167,10 @@ class lead_trekker implements \leadtrekker\lead_trekker {
     global $_SESSION;
     $fields_aggregated = [];
 
-    if (is_array($lead_data['#fields'])) {
-      $fields_aggregated = $lead_data['#fields'];
+    if(isset($lead_data['#fields'])) {
+        if (is_array($lead_data['#fields'])) {
+            $fields_aggregated = $lead_data['#fields'];
+        }
     }
 
     if (isset($_SESSION['leadtrekker'])) {

@@ -43,7 +43,7 @@ function leadtrekker_admin_settings_form() {
     '#type' => 'checkbox',
     '#title' => t('Enable lead processing'),
     '#multiple' => FALSE,
-    '#description' => t('Send leads to leadtrekker'),
+    '#description' => t('Send leads to Leadtrekker.'),
     '#default_value' => variable_get('leadtrekker_enabled', TRUE),
   ];
 

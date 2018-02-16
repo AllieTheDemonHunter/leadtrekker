@@ -1,309 +1,504 @@
 <?php
-function leadtrekker_boot() {
-  global $_SESSION, $_SERVER;
+/**
+ * Implements hook_boot().
+ */
+function leadtrekker_boot()
+{
+    global $_SESSION, $_SERVER;
 
-  if (!session_status()) {
-    session_start();
-  }
+    if (!session_status()) {
+        session_start();
+    }
 
-  //Find extra data to attach to leadtrekker submissions
-  if ($_SERVER['QUERY_STRING'] != "") {
-    _leadtrekker_recognise($_SERVER['QUERY_STRING']);
-  }
+    //Find extra data to attach to leadtrekker submissions
+    if ($_SERVER['QUERY_STRING'] != "") {
+        _leadtrekker_recognise($_SERVER['QUERY_STRING']);
+    }
 }
 
 /**
  *  Implements hook_menu().
  */
-function leadtrekker_menu() {
-  $items['admin/config/services/leadtrekker'] = [
-    'title' => 'Leadtrekker',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['leadtrekker_admin_settings_form'],
-    'access arguments' => ['administer leadtrekker'],
-    'type' => MENU_NORMAL_ITEM,
-      'file' => 'leadtrekker.admin.inc'
-  ];
-  return $items;
+function leadtrekker_menu()
+{
+    $items['admin/config/services/leadtrekker'] = [
+        'title' => 'Leadtrekker',
+        'description' => 'Leadtrekker integration with Webform.',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => ['leadtrekker_admin_settings_form'],
+        'access arguments' => ['administer leadtrekker'],
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'leadtrekker.admin.inc'
+    ];
+    $items['leadtrekker/source_ids'] = [
+        'title' => 'Leadtrekker Source ID',
+        'description' => 'Leadtrekker integration with Webform.',
+        'page callback' => '_leadtrekker_source_ids',
+        'page arguments' => [4],
+        'access arguments' => ['administer leadtrekker'],
+        'type' => MENU_CALLBACK,
+    ];
+    return $items;
 }
 
 /**
  * Implements hook_permission().
  */
-function leadtrekker_permission() {
-  return [
-    'administer leadtrekker' => [
-      'title' => t('Administer Leadtrekker'),
-    ],
-  ];
+function leadtrekker_permission()
+{
+    return [
+        'administer leadtrekker' => [
+            'title' => t('Administer Leadtrekker'),
+        ],
+    ];
+}
+
+function _leadtrekker_source_ids_validate($available_values)
+{
+    if (!is_array($available_values) && is_string($available_values)) {
+        module_load_include('inc', 'webform', 'components/select');
+        $available_values_array = _webform_select_options_from_text($available_values);
+    } else {
+        $available_values_array = $available_values;
+    }
+
+    $report['valid'] = [
+        'title' => "Valid",
+        'description' => 'Valid Source IDs are numerical.',
+        'data' => [],
+    ];
+
+    $report['invalid'] = [
+        'title' => "Invalid",
+        'description' => 'Invalid values <strong>must be corrected or removed</strong> to enable this Primary Component.',
+        'data' => []
+    ];
+
+
+    foreach ($available_values_array as $key => $value) {
+        if (is_int($key)) {
+            $report['valid']['data'][$key] = $value;
+        } else {
+            $report['invalid']['data'][$key] = $value;
+        }
+    }
+
+    $output = "";
+
+    foreach ($report as $good_or_bad => $values) {
+        $output .= '<h4>' . $values['title'] . '</h4>';
+        $output .= '<small class="description">' . $values['description'] . '</small>';
+        $output .= '<dl class="' . $good_or_bad . '">';
+        foreach ($values['data'] as $key => $value) {
+            $output .= '<dt>' . $value . '</dt>';
+            $output .= '<dd><pre>Source ID: ' . $key . '</pre></dd>';
+        }
+        $output .= '</dl>';
+    }
+
+    $label = "<label class='form-item label'>Leadtrekker Source IDs Analysis</label>";
+
+    $return['output'] = $label . $output;
+    $return['data'] = $report;
+
+    return $return;
+}
+
+function _leadtrekker_source_ids()
+{
+    $leadtrekker_primary_component_index = check_plain($_POST['extra']['leadtrekker_primary_component']);
+    $leadtrekker_primary_components = _leadtrekker_component_field_match();
+    $leadtrekker_primary_component = $leadtrekker_primary_components['options'][$leadtrekker_primary_component_index];
+
+    if ($leadtrekker_primary_component == "source_ids") {
+        $available_values = check_plain($_POST['extra']['items']);
+        $source_ids_analysis = _leadtrekker_source_ids_validate($available_values);
+        $output = $source_ids_analysis['output'];
+
+        /**
+         * Ajax Out!
+         */
+        $commands[] = ajax_command_html('#source-ids', $output);
+        $page = array('#type' => 'ajax', '#commands' => $commands);
+
+    } else {
+        $commands[] = ajax_command_html('#source-ids', '<div  style="border: none;"></div>');
+        $page = array('#type' => 'ajax', '#commands' => $commands);
+    }
+
+    ajax_deliver($page);
 }
 
 /**
  *  Implements hook_form_FORM_ID_alter().
  */
-function leadtrekker_form_webform_configure_form_alter(&$form, &$form_state, $form_id) {
-  $form['web_service'][0] = [
-    '#type' => 'fieldset',
-    '#title' => 'Web Services',
-    '#default_value' => FALSE,
-    '#description' => 'Integrate this form with exposed web services.',
-    '#weight' => 50,
-    'leadtrekker_source_id' => [
-      '#type' => 'textfield',
-      '#title' => 'Leadtrekker Source ID',
-      '#default_value' => variable_get('leadtrekker_webform_source_id_' . $form_state['build_info']['args'][0]->nid, ''),
-      '#description' => 'Identifies this form in Leadtrekker. <a target="_blank" href="http://my.leadtrekker.com" title="Go to Leadtrekker (opens in new tab)"><em>(Sources can be setup within Leadtrekker.)</em></a>',
-      '#weight' => 55,
-      '#parents' => ['extra', 'leadtrekker'],
-      '#disabled' => FALSE,
-      '#value_callback' => '_leadtrekker_webform_source_id',
-      '#size' => 5,
-      '#maxlength' => 128,
-      '#required' => FALSE,
-    ],
-    'leadtrekker_notify_mail' => [
-      '#type' => 'checkbox',
-      '#title' => 'Notify by E-mail',
-      '#default_value' => variable_get('leadtrekker_webform_notify_email_' . $form_state['build_info']['args'][0]->nid, 1),
-      '#description' => 'Send the account owner notifications whenever a lead has been created.',
-      '#weight' => 56,
-      '#parents' => ['extra', 'leadtrekker_notify_mail'],
-      '#disabled' => FALSE,
-      '#value_callback' => '_leadtrekker_value_notify_mail',
-    ],
-  ];
+function leadtrekker_form_webform_configure_form_alter(&$form, &$form_state, $form_id)
+{
+    $form['web_service'][0] = [
+        '#type' => 'fieldset',
+        '#title' => 'Web Services',
+        '#default_value' => FALSE,
+        '#description' => 'Integrate this form with exposed web services.',
+        '#weight' => 2,
+        'leadtrekker_source_id' => [
+            '#type' => 'textfield',
+            '#title' => 'Leadtrekker Source ID',
+            '#default_value' => variable_get('leadtrekker_webform_source_id_' . $form_state['build_info']['args'][0]->nid, ''),
+            '#description' => '<p>Identifies this form in Leadtrekker. <a target="_blank" href="http://my.leadtrekker.com" title="Go to Leadtrekker (opens in new tab)"><em>(Sources can be setup within Leadtrekker.)</em></a></p>
+                                <p><em>Note:</em> This Source ID will be overridden if there is a Primary Component marked as \'Source IDs.\'</p>',
+            '#weight' => 5,
+            '#parents' => ['extra', 'leadtrekker'],
+            '#disabled' => FALSE,
+            '#value_callback' => '_leadtrekker_webform_source_id',
+            '#size' => 5,
+            '#maxlength' => 128,
+            '#required' => FALSE,
+        ],
+        'leadtrekker_notify_mail' => [
+            '#type' => 'checkbox',
+            '#title' => 'Notify by E-mail',
+            '#default_value' => variable_get('leadtrekker_webform_notify_email_' . $form_state['build_info']['args'][0]->nid, 1),
+            '#description' => 'Send the account owner notifications whenever a lead has been created.',
+            '#weight' => 3,
+            '#parents' => ['extra', 'leadtrekker_notify_mail'],
+            '#disabled' => FALSE,
+            '#value_callback' => '_leadtrekker_value_notify_mail',
+        ],
+    ];
 
-  return;
+    $form["#validate"][] = "leadtrekker_form_webform_configure_form_validate";
+
+    return $form;
 }
 
-function _leadtrekker_component_field_match() {
-  return [
-    'options' => [
-      'leadname',
-      'leademail',
-      'leadnumber',
-      'custom_field',
-    ],
-    'form_options' => [
-      t('Lead Name'),
-      t('Lead Email'),
-      t('Lead Number'),
-      t('Custom Field'),
-    ],
-  ];
+function leadtrekker_form_webform_configure_form_validate($form, &$form_state)
+{
+    if (isset($form_state['values']['extra']['items']) &&
+        $form_state['input']['extra']['leadtrekker_primary_component'] == 5
+    ) {
+        module_load_include('inc', 'webform', 'components/select');
+        $available_values_array = _webform_select_options_from_text($form_state['values']['extra']['items']);
+        $source_ids_analysis = _leadtrekker_source_ids_validate($available_values_array);
+        if (!empty($source_ids_analysis['data']['invalid']['data'])) {
+            $number_invalid_source_ids = count($source_ids_analysis['data']['invalid']['data']);
+            form_set_error('extra][items', $number_invalid_source_ids . ' Invalid Source IDs found');
+        }
+    }
+}
+
+/**
+ * @return array
+ */
+function _leadtrekker_component_field_match()
+{
+    return [
+        'options' => [
+            'leadname',
+            'leademail',
+            'leadnumber',
+            'company',
+            'custom_field',
+            'source_ids'
+        ],
+        'form_options' => [
+            t('Lead Name'),
+            t('Lead Email'),
+            t('Lead Number'),
+            t('Lead Company'),
+            t('Custom Field'),
+            t('Source IDs')
+        ]
+    ];
 }
 
 /**
  *  Implements hook_form_FORM_ID_alter().
  */
-function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state, $form_id) {
+function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state, $form_id)
+{
+    $leadtrekker_field_types = _leadtrekker_component_field_match();
+    $js_path = drupal_get_path('module', 'leadtrekker') . '/js/ajax.js';
+    $css_path = drupal_get_path('module', 'leadtrekker') . '/css/leadtrekker.css';
+    $analysis = "";
+    $current_leadtrekker_primary_component = variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_primary_' . $form['cid']['#value'], 3);
 
-  $leadtrekker_field_types = _leadtrekker_component_field_match();
+    if($form['type']['#value'] == "select") {
+        $form["#validate"][] = "leadtrekker_form_webform_configure_form_validate";
 
-  $form['web_service'] = [
-    '#type' => 'fieldset',
-    '#title' => 'Web Services',
-    '#default_value' => FALSE,
-    '#description' => 'Integrate this field with exposed web services.',
-    '#weight' => 50,
-    'leadtrekker' => [
-      '#type' => 'checkbox',
-      '#title' => 'Leadtrekker',
-      '#default_value' => variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_key_' . $form['cid']['#value'], 0),
-      '#description' => 'Include this field in Leadtrekker submissions.',
-      '#weight' => 55,
-      '#parents' => ['extra', 'leadtrekker'],
-      '#disabled' => FALSE,
-      '#value_callback' => '_leadtrekker_value',
-    ],
+        /**
+         * Go check the values after they've changed/not (textarea blur).
+         */
+        $form['extra']['items']["#ajax"] = [
+            'path' => 'leadtrekker/source_ids',
+            'wrapper' => 'source-ids',
+            'effect' => 'fade',
+            'event' => 'blur'
+        ];
 
-    'leadtrekker_primary_component' => [
-      '#type' => 'select',
-      '#title' => 'Primary Component',
-      '#default_value' => variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_primary_' . $form['cid']['#value'], 3),
-      '#description' => 'Leadtrekker primary field identifier.',
-      '#weight' => 56,
-      '#parents' => ['extra', 'leadtrekker_webform_component_primary'],
-      '#disabled' => FALSE,
-      '#value_callback' => '_leadtrekker_value_primary',
-      //We need to get leadname, leademail, leadnumber.
-      '#options' => $leadtrekker_field_types['form_options'],
-    ],
-  ];
+        /**
+         * If Source IDs have been selected,
+         * bring in the analysis of the validity status.
+         * Which should never have "Invalid".
+         */
+        if($current_leadtrekker_primary_component == 5) {
+            $analysis_data = _leadtrekker_source_ids_validate($form_state['build_info']['args'][1]['extra']['items']);
+            $analysis = $analysis_data['output'];
+        }
+    }  else {
+        /**
+         * Prevents components other than select, having the "SourceIDs Primary Component" available.
+         */
+        array_pop($leadtrekker_field_types['form_options']);
+        array_pop($leadtrekker_field_types['options']);
+    }
 
-  return;
+    $form['web_service'] = [
+        '#type' => 'fieldset',
+        '#title' => 'Web Services',
+        '#default_value' => FALSE,
+        '#description' => 'Integrate this form with exposed web services.<br>This webform\'s Main Source ID is: <b>' . variable_get('leadtrekker_webform_source_id_' . $form_state['build_info']['args'][0]->nid, 'Not set' ). '</b>',
+        '#weight' => 5,
+        'leadtrekker' => [
+            '#type' => 'checkbox',
+            '#title' => 'Leadtrekker',
+            '#default_value' => variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_key_' . $form['cid']['#value'], 0),
+            '#description' => 'Include this field in Leadtrekker submissions.',
+            '#weight' => 5,
+            '#parents' => ['extra', 'leadtrekker'],
+            '#disabled' => FALSE,
+            '#value_callback' => '_leadtrekker_value',
+        ],
+        'leadtrekker_primary_component' => [
+            '#type' => 'select',
+            '#title' => 'Primary Component',
+            '#default_value' => $current_leadtrekker_primary_component,
+            '#description' => 'Leadtrekker primary field identifier.',
+            '#weight' => 6,
+            '#parents' => ['extra', 'leadtrekker_primary_component'],
+            '#disabled' => FALSE,
+            '#value_callback' => '_leadtrekker_value_primary',
+            "#suffix" => '<div id="source-ids">' . $analysis . '</div>',
+            '#options' => $leadtrekker_field_types['form_options'],
+            '#attached' => [
+                'js' => [$js_path],
+                'css' => [$css_path]
+            ],
+            "#ajax" => [
+                'path' => 'leadtrekker/source_ids',
+                'wrapper' => 'source-ids',
+                'effect' => 'fade',
+            ],
+        ]
+    ];
+
+    return $form;
+}
+
+/**
+ * Implements hook_field_validate().
+ */
+function leadtrekker_field_validate($elements, $form_state, $form_state_complete_form)
+{
+    if ($elements == "webform") {
+        return true;
+    }
 }
 
 /**
  * Implements hook_webform_submission_insert().
  */
-function leadtrekker_webform_submission_insert($node, $submission) {
+function leadtrekker_webform_submission_insert($node, $submission)
+{
 
-  global $_SESSION;
+    global $_SESSION;
 
-  if ($submission->is_draft != 0) {
-    return;
-  }
-
-  $webform_fields = [];
-
-  foreach ($submission->data as $cid => $value) {
-    if (is_null($value[0])) {
-      $submitted_value = $value['value'][0];
-    }
-    elseif (is_array($value) && isset($value[1])) {
-        $submitted_value = implode(", ", $value);
-    }
-    else {
-      $submitted_value = $value[0];
+    if ($submission->is_draft != 0) {
+        return;
     }
 
-    if (isset($node->webform['components'][$cid]['extra']['leadtrekker']) && $node->webform['components'][$cid]['extra']['leadtrekker'] === TRUE) {
+    $webform_fields = [];
 
-      //Check the defined data type fo the webform field.
-      $data_type = $node->webform['components'][$cid]['type'];
-
-      $leadtrekker_webform_component_primary_id = variable_get('leadtrekker_webform_component_' . $node->nid . '_primary_' . $cid, 3);
-      $leadtrekker_field_types = _leadtrekker_component_field_match();
-      $leadtrekker_webform_component_primary = $leadtrekker_field_types['options'][$leadtrekker_webform_component_primary_id];
-
-      // Check if this field is marked as a custom field.
-      if ($leadtrekker_webform_component_primary == 'custom_field') {
-        $field_key = $node->webform['components'][$cid]['name'];
-        $webform_fields['#fields'][$field_key] = $submitted_value;
-      }
-      else {
-        $field_key = $leadtrekker_webform_component_primary; //Required Leadtrekker field.
-        if ($leadtrekker_webform_component_primary == 'leadname' && isset($webform_fields[$field_key])) {
-          $webform_fields[$field_key] = $webform_fields[$field_key] . " " . $submitted_value;
+    foreach ($submission->data as $cid => $value) {
+        if (is_null($value[0])) {
+            $submitted_value = $value['value'][0];
+        } elseif (is_array($value) && isset($value[1])) {
+            $submitted_value = implode(", ", $value);
+        } else {
+            $submitted_value = $value[0];
         }
-        else {
-          $webform_fields[$field_key] = $submitted_value;
+
+        if (isset($node->webform['components'][$cid]['extra']['leadtrekker']) && $node->webform['components'][$cid]['extra']['leadtrekker'] === TRUE) {
+
+            //Check the defined data type fo the webform field.
+            $data_type = $node->webform['components'][$cid]['type'];
+
+            $leadtrekker_webform_component_primary_id = variable_get('leadtrekker_webform_component_' . $node->nid . '_primary_' . $cid, 3);
+            $leadtrekker_field_types = _leadtrekker_component_field_match();
+            $leadtrekker_webform_component_primary = $leadtrekker_field_types['options'][$leadtrekker_webform_component_primary_id];
+
+            // Check if this field is marked as a custom field.
+            if ($leadtrekker_webform_component_primary == 'custom_field') {
+                $field_key = $node->webform['components'][$cid]['name'];
+                $webform_fields['#fields'][$field_key] = $submitted_value;
+            } else {
+                $field_key = $leadtrekker_webform_component_primary; //Required Leadtrekker field.
+                if ($leadtrekker_webform_component_primary == 'leadname' && isset($webform_fields[$field_key])) {
+                    $webform_fields[$field_key] = $webform_fields[$field_key] . " " . $submitted_value;
+                } else {
+                    $webform_fields[$field_key] = $submitted_value;
+                }
+            }
+
+            if (!empty($submission->file_usage['added_fids']) && $data_type == 'file') {
+                $upload_files = file_load_multiple($submission->file_usage['added_fids']);
+
+                $object = array_pop($upload_files);
+
+                $full_path = drupal_realpath($object->uri);
+                $mime_type = $object->filemime;
+                $post_name = $object->filename;
+
+                $file = new CURLFile($full_path, $mime_type, $post_name);
+
+                $webform_fields['file'] = $file;
+            }
         }
-      }
-
-      if (!empty($submission->file_usage['added_fids']) && $data_type == 'file') {
-        $upload_files = file_load_multiple($submission->file_usage['added_fids']);
-
-        $object = array_pop($upload_files);
-
-        $full_path = drupal_realpath($object->uri);
-        $mime_type = $object->filemime;
-        $post_name = $object->filename;
-
-        $file = new CURLFile($full_path, $mime_type, $post_name);
-
-        $webform_fields['file'] = $file;
-      }
     }
-  }
 
-  $source_id = variable_get('leadtrekker_webform_source_id_' . $node->nid, '');
+    $source_id = variable_get('leadtrekker_webform_source_id_' . $node->nid, '');
 
-  if (!empty($webform_fields) && count($webform_fields) >= 3) {
-    $send_mail = variable_get('leadtrekker_webform_notify_email_' . $node->nid, 1);
-    send_lead($source_id, $webform_fields, $send_mail);
-  }
-  else {
-    watchdog('leadtrekker', "Leadtrekker found eligible webform components, but no submission was sent. Check that these fields have their required Leadtrekker values set.");
-  }
+    if (!empty($webform_fields) && count($webform_fields) >= 3) {
+        $send_mail = variable_get('leadtrekker_webform_notify_email_' . $node->nid, 1);
+        send_lead($source_id, $webform_fields, $send_mail);
+    } else {
+        watchdog('leadtrekker', "Leadtrekker found eligible webform components, but no submission was sent. Check that these fields have their required Leadtrekker values set.");
+    }
 }
 
 /**
-* Send lead to leadtrekker
-*/
-function send_lead($source_id, $data, $send_mail){
-  if(variable_get('leadtrekker_enabled', TRUE)){
-    
-    include_once("leadtrekker.api.inc");
-    $leadtrekker_api_key = variable_get('leadtrekker_api_key', LEADTREKKER_KEY_DEBUG);
-    $debug = variable_get('leadtrekker_debug', 0);
-    $lt = new lead_trekker($leadtrekker_api_key, $source_id, $data, $send_mail, $debug);
+ * Send lead to leadtrekker
+ */
+function send_lead($source_id, $data, $send_mail)
+{
+    if (variable_get('leadtrekker_enabled', TRUE)) {
+        include_once("leadtrekker.api.inc");
+        $leadtrekker_api_key = variable_get('leadtrekker_api_key', LEADTREKKER_KEY_DEBUG);
+        $debug = variable_get('leadtrekker_debug', 0);
+        $lt = new lead_trekker($leadtrekker_api_key, $source_id, $data, $send_mail, $debug);
 
-    if(!$lt){
-      watchdog('leadtrekker', "Unable to contact Leadtrekker.", [], WATCHDOG_WARNING);
+        if (!$lt) {
+            watchdog('leadtrekker', "Unable to contact Leadtrekker.", [], WATCHDOG_WARNING);
+        }
+
+        if (!is_numeric($lt->lead_id)) {
+            watchdog('leadtrekker', "Lead error: %message.", ['%message' => $lt->lead_id], WATCHDOG_WARNING);
+        }
+    }
+}
+
+/**
+ * @param $element
+ * @param bool $input
+ * @param array $form_state
+ * @return bool|int
+ */
+function _leadtrekker_value($element, $input = FALSE, $form_state = [])
+{
+    if ($input === FALSE) {
+        return isset($element['#default_value']) ? $element['#default_value'] : 0;
+    } elseif (isset($form_state['build_info']['args'][1]['cid'])) {
+        variable_set('leadtrekker_webform_component_' . $form_state['build_info']['args'][1]['nid'] . '_key_' . $form_state['build_info']['args'][1]['cid'], $input);
     }
 
-    if(!is_numeric($lt->lead_id)){
-      watchdog('leadtrekker', "Lead error: %message.", ['%message' => $lt->lead_id], WATCHDOG_WARNING);
+    return TRUE;
+}
+
+/**
+ * @param $element
+ * @param bool $input
+ * @param array $form_state
+ * @return bool|int
+ */
+function _leadtrekker_value_notify_mail($element, $input = FALSE, $form_state = [])
+{
+    if ($input === FALSE) {
+        return isset($element['#default_value']) ? $element['#default_value'] : 0;
+    } else {
+        if ($input === NULL) {
+            $input = 0;
+        }
+        variable_set('leadtrekker_webform_notify_email_' . $form_state['build_info']['args'][0]->nid, $input);
     }
-  }
+
+    return TRUE;
 }
 
-function _leadtrekker_value($element, $input = FALSE, $form_state = []) {
-  if ($input === FALSE) {
-    return isset($element['#default_value']) ? $element['#default_value'] : 0;
-  }
-  elseif (isset($form_state['build_info']['args'][1]['cid'])) {
-    variable_set('leadtrekker_webform_component_' . $form_state['build_info']['args'][1]['nid'] . '_key_' . $form_state['build_info']['args'][1]['cid'], $input);
-  }
-
-  return TRUE;
-}
-
-function _leadtrekker_value_notify_mail($element, $input = FALSE, $form_state = []) {
-  if ($input === FALSE) {
-    return isset($element['#default_value']) ? $element['#default_value'] : 0;
-  }
-  else {
-    if ($input === NULL) {
-      $input = 0;
+/**
+ * @param $element
+ * @param bool $input
+ * @param array $form_state
+ * @return bool|int
+ */
+function _leadtrekker_value_primary($element, $input = FALSE, $form_state = [])
+{
+    if ($input === FALSE) {
+        return isset($element['#default_value']) ? $element['#default_value'] : 3;
+    } elseif (isset($form_state['build_info']['args'][1]['cid'])) {
+        variable_set('leadtrekker_webform_component_' . $form_state['build_info']['args'][1]['nid'] . '_primary_' . $form_state['build_info']['args'][1]['cid'], $input);
     }
-    variable_set('leadtrekker_webform_notify_email_' . $form_state['build_info']['args'][0]->nid, $input);
-  }
 
-  return TRUE;
+    return TRUE;
 }
 
-function _leadtrekker_value_primary($element, $input = FALSE, $form_state = []) {
-  if ($input === FALSE) {
-    return isset($element['#default_value']) ? $element['#default_value'] : 3;
-  }
-  elseif (isset($form_state['build_info']['args'][1]['cid'])) {
-    variable_set('leadtrekker_webform_component_' . $form_state['build_info']['args'][1]['nid'] . '_primary_' . $form_state['build_info']['args'][1]['cid'], $input);
-  }
+/**
+ * @param $element
+ * @param bool $input
+ * @param array $form_state
+ * @return bool|int
+ */
+function _leadtrekker_webform_source_id($element, $input = FALSE, $form_state = [])
+{
+    if ($input === FALSE) {
+        return isset($element['#default_value']) ? $element['#default_value'] : 0;
+    } else {
+        variable_set('leadtrekker_webform_source_id_' . $form_state['build_info']['args'][0]->nid, $input);
+    }
 
-  return TRUE;
-}
-
-function _leadtrekker_webform_source_id($element, $input = FALSE, $form_state = []) {
-  if ($input === FALSE) {
-    return isset($element['#default_value']) ? $element['#default_value'] : 0;
-  }
-  else {
-    variable_set('leadtrekker_webform_source_id_' . $form_state['build_info']['args'][0]->nid, $input);
-  }
-
-  return FALSE;
+    return FALSE;
 }
 
 /**
  *  Checks for a pattern identifying Leadtrekker or PMailer.
  */
-function _leadtrekker_recognise($url) {
-  global $_SESSION;
-  $query_array = [];
-  parse_str($url, $query_array);
+function _leadtrekker_recognise($url)
+{
+    global $_SESSION;
+    $query_array = [];
+    parse_str($url, $query_array);
 
-  if (!empty($query_array)) {
-    $pattern['google'] = ['campaign', 'adgroup', 'keyword'];
-    $pattern['mail'] = ['utm_source', 'utm_medium', 'utm_campaign'];
+    if (!empty($query_array)) {
+        $pattern['google'] = ['campaign', 'adgroup', 'keyword'];
+        $pattern['mail'] = ['utm_source', 'utm_medium', 'utm_campaign'];
 
-    foreach ($pattern as $source_to_check => $required_keys) {
-      foreach ($required_keys as $required_key) {
-        if (array_key_exists($required_key, $query_array)) {
-          //This query set seems legit.
-          _leadtrekker_register($query_array);
-          return;
+        foreach ($pattern as $source_to_check => $required_keys) {
+            foreach ($required_keys as $required_key) {
+                if (array_key_exists($required_key, $query_array)) {
+                    //This query set seems legit.
+                    _leadtrekker_register($query_array);
+                    return;
+                }
+            }
         }
-      }
     }
-  }
 }
 
-function _leadtrekker_register($external_reference_info) {
-  global $_SESSION;
-  // We're saving it along with any LT submission.
-  // This also means that only one external reference can be used.
-  $_SESSION['leadtrekker'] = $external_reference_info;
+/**
+ * @param $external_reference_info
+ */
+function _leadtrekker_register($external_reference_info)
+{
+    global $_SESSION;
+    // We're saving it along with any LT submission.
+    // This also means that only one external named reference can be used.
+    $_SESSION['leadtrekker'] = $external_reference_info;
 }
