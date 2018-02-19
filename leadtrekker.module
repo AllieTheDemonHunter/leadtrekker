@@ -74,7 +74,6 @@ function _leadtrekker_source_ids_validate($available_values)
         'data' => []
     ];
 
-
     foreach ($available_values_array as $key => $value) {
         if (is_int($key)) {
             $report['valid']['data'][$key] = $value;
