@@ -342,6 +342,7 @@ function leadtrekker_webform_submission_insert($node, $submission)
                 $webform_fields['#fields'][$field_key] = $submitted_value;
             } else {
                 $field_key = $leadtrekker_webform_component_primary; //Required Leadtrekker field.
+                // @TODO Figure out what is going on here, why only leadname below..
                 if ($leadtrekker_webform_component_primary == 'leadname' && isset($webform_fields[$field_key])) {
                     $webform_fields[$field_key] = $webform_fields[$field_key] . " " . $submitted_value;
                 } else {
@@ -365,7 +366,17 @@ function leadtrekker_webform_submission_insert($node, $submission)
         }
     }
 
-    $source_id = variable_get('leadtrekker_webform_source_id_' . $node->nid, '');
+    /**
+     * Implementation of 'new' dynamic Source IDs. Source IDs can now be specified in a select box - which when selected
+     * can override the site wide default.
+     */
+
+    if($field_key == "source_ids" && is_numeric($submitted_value)) {
+        $source_id = $submitted_value;
+    } else {
+        $source_id = variable_get('leadtrekker_webform_source_id_' . $node->nid, '');
+    }
+
 
     if (!empty($webform_fields) && count($webform_fields) >= 3) {
         $send_mail = variable_get('leadtrekker_webform_notify_email_' . $node->nid, 1);

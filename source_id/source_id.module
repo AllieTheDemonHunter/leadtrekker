@@ -7,43 +7,6 @@
 /**
  * @defgroup source_id_field Example: Field Types API
  * @ingroup examples
- * @{
- * Examples using Field Types API.
- *
- * This is updated from Barry Jaspan's presentation at Drupalcon Paris,
- * @link http://acquia.com/community/resources/acquia-tv/intro-field-api-module-developers Video Presentation @endlink
- *
- * Providing a field requires:
- * - Defining a field:
- *   - hook_field_info()
- *   - hook_field_schema()
- *   - hook_field_validate()
- *   - hook_field_is_empty()
- *
- * - Defining a formatter for the field (the portion that outputs the field for
- *   display):
- *   - hook_field_formatter_info()
- *   - hook_field_formatter_view()
- *
- * - Defining a widget for the edit form:
- *   - hook_field_widget_info()
- *   - hook_field_widget_form()
- *
- * Our module defines the field in source_id_field_info(),
- * source_id_field_validate() and source_id_field_field_is_empty().
- * source_id_field_schema() is implemented in source_id_field.install.
- *
- * Our module sets up a formatter in source_id_field_formatter_info() and
- * source_id_field_field_formatter_view(). These are the API hooks that present
- * formatted and themed output to the user.
- *
- * And finally, our module defines the widget in
- * source_id_field_widget_info() and source_id_field_widget_form().
- * The widget is the form element used to receive input from the user
- * when the field is being populated.
- *
- * @see field_types
- * @see field
  */
 
 /***************************************************************
@@ -69,13 +32,6 @@ function source_id_field_info() {
 
 /**
  * Implements hook_field_validate().
- *
- * This hook gives us a chance to validate content that's in our
- * field. We're really only interested in the $items parameter, since
- * it holds arrays representing content in the field we've defined.
- * We want to verify that the items only contain RGB hex values like
- * this: #RRGGBB. If the item validates, we do nothing. If it doesn't
- * validate, we add our own error notification to the $errors parameter.
  *
  * @see source_id_field_field_widget_error()
  */
@@ -107,10 +63,6 @@ function source_id_field_is_empty($item, $field) {
 /**
  * Implements hook_field_formatter_info().
  *
- * We need to tell Drupal that we have two different types of formatters
- * for this field. One will change the text color, and the other will
- * change the background color.
- *
  * @see source_id_field_field_formatter_view()
  */
 function source_id_field_formatter_info() {
@@ -125,12 +77,6 @@ function source_id_field_formatter_info() {
 
 /**
  * Implements hook_field_formatter_view().
- *
- * Two formatters are implemented.
- * - source_id_field_text just outputs markup indicating the color that
- *   was entered and uses an inline style to set the text color to that value.
- * - source_id_field_color_background does the same but also changes the
- *   background color of div.region-content.
  *
  * @see source_id_field_field_formatter_info()
  */
@@ -179,7 +125,6 @@ function source_id_field_widget_info() {
  *
  * hook_widget_form() is where Drupal tells us to create form elements for
  * our field's widget.
- *
  */
 function source_id_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $value = isset($items[$delta]['source_id']) ? $items[$delta]['source_id'] : '';
