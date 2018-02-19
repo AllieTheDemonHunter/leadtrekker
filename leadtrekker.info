@@ -5,3 +5,4 @@ package = Leadtrekker
 dependencies[] = webform
 dependencies[] = ctools
 dependencies[] = rules
+dependencies[] = token
