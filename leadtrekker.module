@@ -216,7 +216,6 @@ function _leadtrekker_component_field_match()
 function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state, $form_id)
 {
     $leadtrekker_field_types = _leadtrekker_component_field_match();
-    $js_path = drupal_get_path('module', 'leadtrekker') . '/js/ajax.js';
     $css_path = drupal_get_path('module', 'leadtrekker') . '/css/leadtrekker.css';
     $analysis = "";
     $current_leadtrekker_primary_component = variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_primary_' . $form['cid']['#value'], 3);
@@ -279,7 +278,6 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
             "#suffix" => '<div id="source-ids">' . $analysis . '</div>',
             '#options' => $leadtrekker_field_types['form_options'],
             '#attached' => [
-                'js' => [$js_path],
                 'css' => [$css_path]
             ],
             "#ajax" => [
