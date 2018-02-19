@@ -1,0 +1,8 @@
+name = Leadtrekker Source ID
+description = Field for Leadtrekker Source IDs
+package = Leadtrekker
+core = 7.x
+dependencies[] = ctools
+dependencies[] = leadtrekker
+dependencies[] = field
+dependencies[] = field_sql_storage

@@ -1,7 +1,7 @@
 name = Leadtrekker
 description = "Leadtrekker integration with Webforms."
 core = 7.x
-package = Webform
+package = Leadtrekker
 dependencies[] = webform
 dependencies[] = ctools
 dependencies[] = rules
