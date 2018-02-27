@@ -218,7 +218,7 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
     $leadtrekker_field_types = _leadtrekker_component_field_match();
     $css_path = drupal_get_path('module', 'leadtrekker') . '/css/leadtrekker.css';
     $analysis = "";
-    $current_leadtrekker_primary_component = variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_primary_' . $form['cid']['#value'], 3);
+    $current_leadtrekker_primary_component = variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_primary_' . $form['cid']['#value'], 4);
 
     if($form['type']['#value'] == "select") {
         $form["#validate"][] = "leadtrekker_form_webform_configure_form_validate";

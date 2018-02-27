@@ -10,21 +10,21 @@
  *
  * @ingroup leadtrekker
  */
-function leadtrekker_token_info() {
-  $info['types']['source_id'] = array(
-    'name' => t('Source ID'),
-    'description' => t('Tokens related to Leadtrekker Source IDs.'),
-    'needs-data' => 'source_id',
-  );
+function leadtrekker_token_info()
+{
+    $info['types']['source_id'] = array(
+        'name' => t('Source ID'),
+        'description' => t('Tokens related to Leadtrekker Source IDs.'),
+        'needs-data' => 'source_id',
+    );
 
-  // Node tokens.
-  $info['tokens']['node']['source_id'] = array(
-    'name' => t('Source ID on Node'),
-    'description' => t("Leadtrekker Source ID attached to node."),
-    'type' => 'source_id',
-  );
+    $info['tokens']['current-page']['source_id'] = array(
+        'name' => t('Source ID on Node'),
+        'description' => t("Leadtrekker Source ID attached to entity."),
+        'type' => 'source_id',
+    );
 
-  return $info;
+    return $info;
 }
 
 /**
@@ -32,52 +32,66 @@ function leadtrekker_token_info() {
  *
  * @ingroup leadtrekker
  */
-function leadtrekker_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  $replacements = array();
-  $sanitize = !empty($options['sanitize']);
+function leadtrekker_tokens($type, $tokens, array $data = array(), array $options = array())
+{
+    $replacements = array();
+    $sanitize = !empty($options['sanitize']);
 
-  // Text format tokens.
-  if ($type == 'source_id' && !empty($data['source_id'])) {
-    $format = $data['source_id'];
+    /**
+     * All the defined fields, each containing a 'type' key which contains the base field_widget
+     */
+    $field_types = field_info_field_map();
+    $current_page = menu_get_object() ? menu_get_object() : menu_get_item();
 
-    foreach ($tokens as $name => $original) {
-      switch ($name) {
-        case 'id':
-          $replacements[$original] = $format->format;
-          break;
-      }
+    /**
+     * Check for 'source_id' type field set on this entity.
+     */
+    foreach ($field_types as $field_name => $field_info) {
+        /**
+         * Terms
+         */
+        if(is_array($current_page) && $current_page['page_callback'] == "taxonomy_term_page") {
+            if(is_object($current_page['page_arguments'][0])) {
+                if ($field_info['type'] == "source_id") {
+                    $registered_source_id_fields[$field_name] = $field_info;
+                    /**
+                     * TEST for the field's presence on this entity.
+                     */
+                    if (isset($current_page['page_arguments'][0]->$field_name)) {
+                        $source_id = $current_page['page_arguments'][0]->$field_name[LANGUAGE_NONE][0]['source_id'];
+                        $source_id = $sanitize ? filter_xss($source_id) : $source_id;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Nodes
+         */
+        elseif (!empty($field_info) && isset($field_info['type'])) {
+            if ($field_info['type'] == "source_id") {
+                $registered_source_id_fields[$field_name] = $field_info;
+                /**
+                 * TEST for the field's presence on this entity.
+                 */
+                if (isset($current_page->$field_name)) {
+                    $source_id = $current_page->$field_name[LANGUAGE_NONE][0]['source_id'];
+                    $source_id = $sanitize ? filter_xss($source_id) : $source_id;
+                }
+            }
+        }
     }
-  }
 
-  // Node tokens.
-  if ($type == 'node' && !empty($data['node'])) {
-    $node = $data['node'];
-
-    foreach ($tokens as $name => $original) {
-      switch ($name) {
-        case 'source_id':
-            /**
-             * Winging it here. Just getting the actual node page's info.
-             */
-          $the_current_page = menu_get_item();
-          //Node pages
-          if(isset($the_current_page['path']) && $the_current_page['path'] == "node/%") {
-              if(isset($the_current_page['page_arguments'][0]->field_leadtrekker_source_id)) {
-                  $the_source_id =  $the_current_page['page_arguments'][0]->field_leadtrekker_source_id['und'][0]['source_id'];
-                  $replacements[$original] = $sanitize ? filter_xss($the_source_id) : $the_source_id;
-              }
-          }
-          break;
-      }
+    if (isset($source_id)) {
+        foreach ($tokens as $name => $original) {
+            switch ($name) {
+                case 'source_id':
+                    $replacements[$original] = $source_id;
+                    continue;
+                    break;
+            }
+        }
     }
 
-    // Chained token relationships.
-    if ($format_tokens = token_find_with_prefix($tokens, 'source_id')) {
-      if ($items = field_get_items('node', $node, 'source_id')) {
-        $replacements += token_generate('source_id', $format_tokens, array('source_id' => $items), $options);
-      }
-    }
-  }
-
-  return $replacements;
+    return $replacements;
 }
