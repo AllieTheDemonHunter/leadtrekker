@@ -19,7 +19,7 @@ function leadtrekker_token_info()
     );
 
     $info['tokens']['current-page']['source_id'] = array(
-        'name' => t('Source ID on Node'),
+        'name' => t('Source ID on Entity'),
         'description' => t("Leadtrekker Source ID attached to entity."),
         'type' => 'source_id',
     );
