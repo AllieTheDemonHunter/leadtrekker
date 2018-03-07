@@ -1,5 +1,5 @@
 # leadtrekker
-Drupal Leadtrekker Module
+Drupal Leadtrekker Module `1.2.1`
 
 _Makes it easy to setup a Webform with Leadtrekker capability._
 
@@ -18,3 +18,7 @@ This module integrates the Leadtrekker API into Drupal 7 with the following modu
 * The admin settings page has the field for specifying the site-wide API key. /admin/config/services/leadtrekker
 
 Visit the official Leadtrekker API page for more info: http://docs.leadtrekker.com/
+
+## Known Issues
+
+**@TODO** The source_id field has to be recognised irrespective of what its field instance's name is. **@FIXED** `1.2.1`

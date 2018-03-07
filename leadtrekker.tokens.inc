@@ -46,65 +46,42 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
     /**
      * All the defined fields, each containing a 'type' key which contains the base field_widget
      */
-    $field_types = field_info_field_map();
-    $current_page = menu_get_object() ? menu_get_object() : menu_get_item();
+    $current_page = menu_get_item();
 
-    /**
-     * Check for 'source_id' type field set on this entity.
-     */
-    foreach ($field_types as $field_name => $field_info) {
-        /**
-         * Terms (page)
-         */
-        if (is_array($current_page) && $current_page['page_callback'] == "taxonomy_term_page") {
-            if (is_object($current_page['page_arguments'][0])) {
-                if ($field_info['type'] == "source_id") {
-                    $registered_source_id_fields[$field_name] = $field_info;
-                    /**
-                     * TEST for the field's presence on this entity.
-                     */
-                    if (isset($current_page['page_arguments'][0]->$field_name)) {
-                        $source_id = $current_page['page_arguments'][0]->$field_name[LANGUAGE_NONE][0]['source_id'];
-                        $source_id = $sanitize ? filter_xss($source_id) : $source_id;
-                    }
-                }
+
+    if (is_array($current_page['load_functions']) && in_array("taxonomy_term_load", $current_page['load_functions'])) {
+        $content_suggestion = "taxonomy_term";
+    } elseif (is_array($current_page['load_functions']) && in_array("node_load", $current_page['load_functions'])) {
+        $content_suggestion = "node";
+    } else {
+        return false;
+    }
+
+    if($content_suggestion == 'taxonomy_term' && isset($current_page['page_arguments'])) {
+        foreach($current_page['page_arguments'] as $key => $value) {
+            try {
+                $entity = entity_metadata_wrapper($content_suggestion, $value);
+                $source_id = _has_source_id_field($entity);
+            } catch (Exception $exception) {
+
             }
-        } /**
-         * Terms
-         */
-        elseif (is_array($current_page) && isset($current_page['path']) && $current_page['path'] == "taxonomy/term/%") {
-            if ($field_info['type'] == "source_id") {
-                $registered_source_id_fields[$field_name] = $field_info;
-                /**
-                 * Load term
-                 */
-                $term = entity_metadata_wrapper('taxonomy_term',taxonomy_term_load(array_pop($current_page['original_map'])));
-                /**
-                 * TEST for the field's presence on this entity.
-                 */
-                if (isset($term->raw()->$field_name)) {
-                    $source_id = $term->raw()->$field_name[LANGUAGE_NONE][0]['source_id'];
-                    $source_id = $sanitize ? filter_xss($source_id) : $source_id;
-                }
-            }
-        } /**
-         * Nodes
-         */
-        elseif (!empty($field_info) && isset($field_info['type'])) {
-            if ($field_info['type'] == "source_id") {
-                $registered_source_id_fields[$field_name] = $field_info;
-                /**
-                 * TEST for the field's presence on this entity.
-                 */
-                if (isset($current_page->$field_name)) {
-                    $source_id = $current_page->$field_name[LANGUAGE_NONE][0]['source_id'];
-                    $source_id = $sanitize ? filter_xss($source_id) : $source_id;
-                }
+        }
+    }
+
+
+    if($content_suggestion == 'node' && isset($current_page['page_arguments'])) {
+        foreach($current_page['page_arguments'] as $key => $value) {
+            try {
+                $entity = entity_metadata_wrapper($value->type, $value);
+                $source_id = _has_source_id_field($entity);
+            } catch (Exception $exception) {
+
             }
         }
     }
 
     if (isset($source_id)) {
+        $source_id = $sanitize ? filter_xss($source_id) : $source_id;
         foreach ($tokens as $name => $original) {
             switch ($name) {
                 case 'source_id':
@@ -115,4 +92,29 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
     }
 
     return $replacements;
+}
+
+/**
+ * Check custom field types for the "Source Id" fieldtype.
+ */
+function _registered_source_id_fields()
+{
+    $light_weight_map = field_info_field_map();
+    foreach ($light_weight_map as $field_name => $field_info) {
+        if ($field_info['type'] == "source_id") {
+            $registered_source_id_fields[$field_name] = $field_info;
+        }
+    }
+
+    return $registered_source_id_fields ? $registered_source_id_fields : [];
+}
+
+function _has_source_id_field(\EntityMetadataWrapper $data)
+{
+    $fields_defined = _registered_source_id_fields();
+    foreach ($data->value() as $field_name => $field_info) {
+        if (array_key_exists($field_name, $fields_defined)) {
+            return $data->value()->$field_name[LANGUAGE_NONE][0]['source_id'];
+        }
+    }
 }
