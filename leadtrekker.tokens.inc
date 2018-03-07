@@ -55,29 +55,19 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
             $content_suggestion = "taxonomy_term";
         } elseif (is_array($current_page['load_functions']) && in_array("node_load", $current_page['load_functions'])) {
             $content_suggestion = "node";
-        } else {
-            return false;
         }
 
         if($content_suggestion == 'taxonomy_term' && isset($current_page['page_arguments'])) {
             foreach($current_page['page_arguments'] as $key => $value) {
-                try {
-                    $entity = entity_metadata_wrapper($content_suggestion, $value);
-                    $source_id = _has_source_id_field($entity);
-                } catch (Exception $exception) {
-
-                }
+                $entity = entity_metadata_wrapper($content_suggestion, $value);
+                $source_id = _has_source_id_field($entity);
             }
         }
-        
+
         if($content_suggestion == 'node' && isset($current_page['page_arguments'])) {
             foreach($current_page['page_arguments'] as $key => $value) {
-                try {
-                    $entity = entity_metadata_wrapper($value->type, $value);
-                    $source_id = _has_source_id_field($entity);
-                } catch (Exception $exception) {
-
-                }
+                $entity = entity_metadata_wrapper($value->type, $value);
+                $source_id = _has_source_id_field($entity);
             }
         }
     }
