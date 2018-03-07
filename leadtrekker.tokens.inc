@@ -43,50 +43,17 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
     $replacements = array();
     $sanitize = !empty($options['sanitize']);
 
-    /**
-     * All the defined fields, each containing a 'type' key which contains the base field_widget
-     */
-    $current_page = menu_get_item();
+    if(isset($data['entity_type']) && isset($data['entity'])) {
+        $source_id = _has_source_id_field(entity_metadata_wrapper($data['entity_type'], $data['entity']));
 
-
-    if (is_array($current_page['load_functions']) && in_array("taxonomy_term_load", $current_page['load_functions'])) {
-        $content_suggestion = "taxonomy_term";
-    } elseif (is_array($current_page['load_functions']) && in_array("node_load", $current_page['load_functions'])) {
-        $content_suggestion = "node";
-    } else {
-        return false;
-    }
-
-    if($content_suggestion == 'taxonomy_term' && isset($current_page['page_arguments'])) {
-        foreach($current_page['page_arguments'] as $key => $value) {
-            try {
-                $entity = entity_metadata_wrapper($content_suggestion, $value);
-                $source_id = _has_source_id_field($entity);
-            } catch (Exception $exception) {
-
-            }
-        }
-    }
-
-
-    if($content_suggestion == 'node' && isset($current_page['page_arguments'])) {
-        foreach($current_page['page_arguments'] as $key => $value) {
-            try {
-                $entity = entity_metadata_wrapper($value->type, $value);
-                $source_id = _has_source_id_field($entity);
-            } catch (Exception $exception) {
-
-            }
-        }
-    }
-
-    if (isset($source_id)) {
-        $source_id = $sanitize ? filter_xss($source_id) : $source_id;
-        foreach ($tokens as $name => $original) {
-            switch ($name) {
-                case 'source_id':
-                    $replacements[$original] = $source_id;
-                    break;
+        if (isset($source_id)) {
+            $source_id = $sanitize ? filter_xss($source_id) : $source_id;
+            foreach ($tokens as $name => $original) {
+                switch ($name) {
+                    case 'source_id':
+                        $replacements[$original] = $source_id;
+                        break;
+                }
             }
         }
     }
@@ -96,6 +63,7 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
 
 /**
  * Check custom field types for the "Source Id" fieldtype.
+ * @return array
  */
 function _registered_source_id_fields()
 {
@@ -109,12 +77,22 @@ function _registered_source_id_fields()
     return $registered_source_id_fields ? $registered_source_id_fields : [];
 }
 
+/**
+ * Returns a source_id if found.
+ * @param EntityMetadataWrapper $data
+ * @return bool
+ */
 function _has_source_id_field(\EntityMetadataWrapper $data)
 {
-    $fields_defined = _registered_source_id_fields();
-    foreach ($data->value() as $field_name => $field_info) {
-        if (array_key_exists($field_name, $fields_defined)) {
-            return $data->value()->$field_name[LANGUAGE_NONE][0]['source_id'];
+    try {
+        $fields_defined = _registered_source_id_fields();
+        $data_values = (array) $data->value();
+        foreach ($data_values as $field_name => $field_info) {
+            if (array_key_exists($field_name, $fields_defined)) {
+                return $data->value()->$field_name[LANGUAGE_NONE][0]['source_id'];
+            }
         }
+    } catch (Exception $exception) {
+        return false;
     }
 }
