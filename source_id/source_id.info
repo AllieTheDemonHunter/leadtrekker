@@ -6,3 +6,4 @@ dependencies[] = ctools
 dependencies[] = leadtrekker
 dependencies[] = field
 dependencies[] = field_sql_storage
+dependencies[] = token

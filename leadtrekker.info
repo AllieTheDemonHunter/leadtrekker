@@ -4,5 +4,3 @@ core = 7.x
 package = Leadtrekker
 dependencies[] = webform
 dependencies[] = ctools
-dependencies[] = rules
-dependencies[] = token
