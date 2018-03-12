@@ -226,7 +226,7 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
     $leadtrekker_field_types = _leadtrekker_component_field_match();
     $css_path = drupal_get_path('module', 'leadtrekker') . '/css/leadtrekker.css';
     $analysis = "";
-    $current_leadtrekker_primary_component = variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_primary_' . $form['cid']['#value'], 4);
+    $current_leadtrekker_primary_component = variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_primary_' . $form['cid']['#value'], 3);
 
     if ($form['type']['#value'] == "select") {
         $form["#validate"][] = "leadtrekker_form_webform_configure_form_validate";
@@ -543,8 +543,8 @@ function leadterkker_field_info()
         'source_id' => array(
             'label' => t('Leadtrekker Source ID'),
             'description' => t('Associates nodes with Leadtrekker Source IDs.'),
-            'default_widget' => 'source_id_widget',
-            'default_formatter' => 'source_id_text',
+            'default_widget' => 'leadtrekker_widget',
+            'default_formatter' => 'leadtrekker_text',
         ),
     );
 }
@@ -590,7 +590,7 @@ function leadterkker_field_formatter_info()
 {
     return array(
         // This formatter just displays the hex value in the color indicated.
-        'source_id_text' => array(
+        'leadtrekker_text' => array(
             'label' => t('Simple text-based formatter'),
             'field types' => array('source_id'),
         ),
@@ -608,7 +608,7 @@ function leadterkker_field_formatter_view($entity_type, $entity, $field, $instan
 
     switch ($display['type']) {
         // This formatter simply outputs the field as text and with a color.
-        case 'source_id_text':
+        case 'leadtrekker_text':
             foreach ($items as $delta => $item) {
                 $element[$delta] = array(
                     // We create a render array to produce the desired output (integer).
@@ -632,12 +632,12 @@ function leadterkker_field_formatter_view($entity_type, $entity, $field, $instan
  * These widget types will eventually show up in hook_field_widget_form,
  * where we will have to flesh them out.
  *
- * @see source_id_widget_form()
+ * @see leadtrekker_widget_form()
  */
 function leadterkker_field_widget_info()
 {
     return array(
-        'source_id_widget' => array(
+        'leadtrekker_widget' => array(
             'label' => t('Source ID as integer.'),
             'field types' => array('source_id'),
         ),
@@ -658,7 +658,7 @@ function leadterkker_field_widget_form(&$form, &$form_state, $field, $instance, 
     $widget['#delta'] = $delta;
 
     switch ($instance['widget']['type']) {
-        case 'source_id_widget':
+        case 'leadtrekker_widget':
             $widget += array(
                 '#type' => 'textfield',
                 '#default_value' => $value,
@@ -687,7 +687,7 @@ function leadterkker_field_widget_form(&$form, &$form_state, $field, $instance, 
 function leadterkker_field_widget_error($element, $error, $form, &$form_state)
 {
     switch ($error['error']) {
-        case 'source_id_field_invalid':
+        case 'leadtrekker_field_invalid':
             form_error($element, $error['message']);
             break;
     }
