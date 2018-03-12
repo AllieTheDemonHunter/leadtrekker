@@ -113,18 +113,15 @@ function _leadtrekker_source_ids()
         $available_values = check_plain($_POST['extra']['items']);
         $source_ids_analysis = _leadtrekker_source_ids_validate($available_values);
         $output = $source_ids_analysis['output'];
-
-        /**
-         * Ajax Out!
-         */
-        $commands[] = ajax_command_html('#source-ids', $output);
-        $page = array('#type' => 'ajax', '#commands' => $commands);
-
+        $commands[] = ajax_command_append('#source-ids', $output);
+        $page = array('#type' => 'ajax', '#commands' => $commands, ajax_command_settings('settings', false));
     } else {
-        $commands[] = ajax_command_html('#source-ids', '<div  style="border: none;"></div>');
-        $page = array('#type' => 'ajax', '#commands' => $commands);
+        $page = ajax_command_settings('settings', false);
     }
 
+    /**
+     * Ajax Out!
+     */
     ajax_deliver($page);
 }
 
@@ -186,6 +183,17 @@ function leadtrekker_form_webform_configure_form_validate($form, &$form_state)
 }
 
 /**
+ * Implements hook_ajax_render_alter().
+ */
+function leadtrekker_ajax_render_alter(&$commands)
+{
+    $commands_override[] = $commands[0]; // Retain the settings command.
+    $commands_override[] = array_pop($commands); // Should be the most recently added?
+    $commands = $commands_override;
+}
+
+
+/**
  * @return array
  */
 function _leadtrekker_component_field_match()
@@ -195,16 +203,16 @@ function _leadtrekker_component_field_match()
             'leadname',
             'leademail',
             'leadnumber',
-            'company',
             'custom_field',
+            'company',
             'source_ids'
         ],
         'form_options' => [
             t('Lead Name'),
             t('Lead Email'),
             t('Lead Number'),
-            t('Lead Company'),
             t('Custom Field'),
+            t('Lead Company'),
             t('Source IDs')
         ]
     ];
@@ -220,7 +228,7 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
     $analysis = "";
     $current_leadtrekker_primary_component = variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_primary_' . $form['cid']['#value'], 4);
 
-    if($form['type']['#value'] == "select") {
+    if ($form['type']['#value'] == "select") {
         $form["#validate"][] = "leadtrekker_form_webform_configure_form_validate";
 
         /**
@@ -238,11 +246,11 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
          * bring in the analysis of the validity status.
          * Which should never have "Invalid".
          */
-        if($current_leadtrekker_primary_component == 5) {
+        if ($current_leadtrekker_primary_component == 5) {
             $analysis_data = _leadtrekker_source_ids_validate($form_state['build_info']['args'][1]['extra']['items']);
             $analysis = $analysis_data['output'];
         }
-    }  else {
+    } else {
         /**
          * Prevents components other than select, having the "SourceIDs Primary Component" available.
          */
@@ -254,7 +262,7 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
         '#type' => 'fieldset',
         '#title' => 'Web Services',
         '#default_value' => FALSE,
-        '#description' => 'Integrate this form with exposed web services.<br>This webform\'s Main Source ID is: <b>' . variable_get('leadtrekker_webform_source_id_' . $form_state['build_info']['args'][0]->nid, 'Not set' ). '</b>',
+        '#description' => 'Integrate this form with exposed web services.<br>This webform\'s Main Source ID is: <b>' . variable_get('leadtrekker_webform_source_id_' . $form_state['build_info']['args'][0]->nid, 'Not set') . '</b>',
         '#weight' => 5,
         'leadtrekker' => [
             '#type' => 'checkbox',
@@ -288,6 +296,11 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
         ]
     ];
 
+    // Attach necessary JavaScript and CSS.
+    $form['#attached'] = array(
+        'js' => array(drupal_get_path('module', 'leadtrekker') . '/js/leadtrekker.js'),
+    );
+
     return $form;
 }
 
@@ -318,7 +331,7 @@ function leadtrekker_webform_submission_insert($node, $submission)
     foreach ($submission->data as $cid => $value) {
         if (is_null($value[0])) {
             $submitted_value = $value['value'][0];
-        } elseif (is_array($value) && isset($value[1])) {
+        } elseif (is_array($value)) {
             $submitted_value = implode(", ", $value);
         } else {
             $submitted_value = $value[0];
@@ -326,21 +339,28 @@ function leadtrekker_webform_submission_insert($node, $submission)
 
         if (isset($node->webform['components'][$cid]['extra']['leadtrekker']) && $node->webform['components'][$cid]['extra']['leadtrekker'] === TRUE) {
 
-            //Check the defined data type fo the webform field.
+            //Check the defined data type for the webform field.
             $data_type = $node->webform['components'][$cid]['type'];
-
-            $leadtrekker_webform_component_primary_id = variable_get('leadtrekker_webform_component_' . $node->nid . '_primary_' . $cid, 3);
+            
+                        $leadtrekker_webform_component_primary_id = variable_get('leadtrekker_webform_component_' . $node->nid . '_primary_' . $cid, 3);
             $leadtrekker_field_types = _leadtrekker_component_field_match();
-            $leadtrekker_webform_component_primary = $leadtrekker_field_types['options'][$leadtrekker_webform_component_primary_id];
+            $leadtrekker_webform_component_primaries = $leadtrekker_field_types['options'][$leadtrekker_webform_component_primary_id];
 
             // Check if this field is marked as a custom field.
-            if ($leadtrekker_webform_component_primary == 'custom_field') {
+            if ($leadtrekker_webform_component_primaries == 'custom_field') {
                 $field_key = $node->webform['components'][$cid]['name'];
-                $webform_fields['#fields'][$field_key] = $submitted_value;
+                if($node->webform['components'][$cid]['extra']['multiple'] === 1) {
+                    $webform_fields['#fields'][$field_key] = $submitted_value;
+                } else {
+                    $webform_fields['#fields'][$field_key] = $submitted_value;
+                }
+
             } else {
-                $field_key = $leadtrekker_webform_component_primary; //Required Leadtrekker field.
-                // @TODO Figure out what is going on here, why only leadname below..
-                if ($leadtrekker_webform_component_primary == 'leadname' && isset($webform_fields[$field_key])) {
+                $field_key = $leadtrekker_webform_component_primaries; //Required Leadtrekker fields.
+                /**
+                 * Formatting lead_names to be ?
+                 */
+                if ($leadtrekker_webform_component_primaries == 'leadname' && isset($webform_fields[$field_key])) {
                     $webform_fields[$field_key] = $webform_fields[$field_key] . " " . $submitted_value;
                 } else {
                     $webform_fields[$field_key] = $submitted_value;
@@ -368,7 +388,7 @@ function leadtrekker_webform_submission_insert($node, $submission)
      * can override the site wide default.
      */
 
-    if($field_key == "source_ids" && is_numeric($submitted_value)) {
+    if ($field_key == "source_ids" && is_numeric($submitted_value)) {
         $source_id = $submitted_value;
     } else {
         $source_id = variable_get('leadtrekker_webform_source_id_' . $node->nid, '');
@@ -509,4 +529,166 @@ function _leadtrekker_register($external_reference_info)
     // We're saving it along with any LT submission.
     // This also means that only one external named reference can be used.
     $_SESSION['leadtrekker'] = $external_reference_info;
+}
+
+/**
+ * Implements hook_field_info().
+ *
+ * Provides the description of the field.
+ */
+function leadterkker_field_info()
+{
+    return array(
+        // We name our field as the associative name of the array.
+        'source_id' => array(
+            'label' => t('Leadtrekker Source ID'),
+            'description' => t('Associates nodes with Leadtrekker Source IDs.'),
+            'default_widget' => 'source_id_widget',
+            'default_formatter' => 'source_id_text',
+        ),
+    );
+}
+
+/**
+ * Implements hook_field_validate().
+ *
+ * @see source_id_field_field_widget_error()
+ */
+function leadterkker_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors)
+{
+    foreach ($items as $delta => $item) {
+        if (!empty($item['source_id'])) {
+            if (!is_numeric($item['source_id'])) {
+                $errors[$field['field_name']][$langcode][$delta][] = array(
+                    'error' => 'source_id_field_invalid',
+                    'message' => t('Source IDs have to be integers.'),
+                );
+            }
+        }
+    }
+}
+
+
+/**
+ * Implements hook_field_is_empty().
+ *
+ * hook_field_is_empty() is where Drupal asks us if this field is empty.
+ * Return TRUE if it does not contain data, FALSE if it does. This lets
+ * the form API flag an error when required fields are empty.
+ */
+function leadterkker_field_is_empty($item, $field)
+{
+    return empty($item['source_id']);
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ *
+ * @see source_id_field_field_formatter_view()
+ */
+function leadterkker_field_formatter_info()
+{
+    return array(
+        // This formatter just displays the hex value in the color indicated.
+        'source_id_text' => array(
+            'label' => t('Simple text-based formatter'),
+            'field types' => array('source_id'),
+        ),
+    );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * @see source_id_field_field_formatter_info()
+ */
+function leadterkker_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display)
+{
+    $element = array();
+
+    switch ($display['type']) {
+        // This formatter simply outputs the field as text and with a color.
+        case 'source_id_text':
+            foreach ($items as $delta => $item) {
+                $element[$delta] = array(
+                    // We create a render array to produce the desired output (integer).
+                    '#type' => 'html_tag',
+                    '#tag' => 'p',
+                    '#value' => $item['source_id'],
+                );
+            }
+            break;
+    }
+
+    return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ *
+ * Three widgets are provided.
+ * - A simple text-only widget where the user enters the '#ffffff'.
+ *
+ * These widget types will eventually show up in hook_field_widget_form,
+ * where we will have to flesh them out.
+ *
+ * @see source_id_widget_form()
+ */
+function leadterkker_field_widget_info()
+{
+    return array(
+        'source_id_widget' => array(
+            'label' => t('Source ID as integer.'),
+            'field types' => array('source_id'),
+        ),
+    );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ *
+ * hook_widget_form() is where Drupal tells us to create form elements for
+ * our field's widget.
+ */
+function leadterkker_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element)
+{
+    $value = isset($items[$delta]['source_id']) ? $items[$delta]['source_id'] : '';
+
+    $widget = $element;
+    $widget['#delta'] = $delta;
+
+    switch ($instance['widget']['type']) {
+        case 'source_id_widget':
+            $widget += array(
+                '#type' => 'textfield',
+                '#default_value' => $value,
+                // Allow a slightly larger size that the field length to allow for some
+                // configurations where all characters won't fit in input field.
+                '#size' => 10,
+                '#maxlength' => 32,
+            );
+            break;
+    }
+
+    $element['source_id'] = $widget;
+    return $element;
+}
+
+/**
+ * Implements hook_field_widget_error().
+ *
+ * hook_field_widget_error() lets us figure out what to do with errors
+ * we might have generated in hook_field_validate(). Generally, we'll just
+ * call form_error().
+ *
+ * @see source_id_field_validate()
+ * @see form_error()
+ */
+function leadterkker_field_widget_error($element, $error, $form, &$form_state)
+{
+    switch ($error['error']) {
+        case 'source_id_field_invalid':
+            form_error($element, $error['message']);
+            break;
+    }
 }
