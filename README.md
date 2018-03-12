@@ -1,5 +1,5 @@
 # leadtrekker
-Drupal Leadtrekker Module `1.2.1`
+Drupal Leadtrekker Module `1.2.2`
 
 _Makes it easy to setup a Webform with Leadtrekker capability._
 
@@ -21,4 +21,5 @@ Visit the official Leadtrekker API page for more info: http://docs.leadtrekker.c
 
 ## Known Issues
 
-**@TODO** The source_id field has to be recognised irrespective of what its field instance's name is. **@FIXED** `1.2.1`
+**@TODO** The source_id field has to be recognised irrespective of what its field instance's name is. **@FIXED** `1.2.2`
+**@FIXED** `1.2.2` Multiple selects/radios which didn't register correctly have been improved.
