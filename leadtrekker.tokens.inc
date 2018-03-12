@@ -50,6 +50,7 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
          * All the defined fields, each containing a 'type' key which contains the base field_widget
          */
         $current_page = menu_get_item();
+        $content_suggestion = "";
 
         if (is_array($current_page['load_functions']) && in_array("taxonomy_term_load", $current_page['load_functions'])) {
             $content_suggestion = "taxonomy_term";
