@@ -100,7 +100,7 @@ function _registered_source_id_fields()
         }
     }
 
-    return $registered_source_id_fields ? $registered_source_id_fields : [];
+    return isset($registered_source_id_fields) ? $registered_source_id_fields : [];
 }
 
 /**
