@@ -58,10 +58,13 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
             $content_suggestion = "node";
         }
 
-        if($content_suggestion == 'taxonomy_term' && isset($current_page['page_arguments'])) {
+        if($content_suggestion == 'taxonomy_term'
+            && isset($current_page['page_arguments'])
+            && !path_is_admin($current_page['path'])) {
             foreach($current_page['page_arguments'] as $key => $value) {
                 $entity = entity_metadata_wrapper($content_suggestion, $value);
                 $source_id = _has_source_id_field($entity);
+
             }
         }
 
@@ -114,7 +117,7 @@ function _has_source_id_field(\EntityMetadataWrapper $data)
         $fields_defined = _registered_source_id_fields();
         $data_values = (array)$data->value();
         foreach ($data_values as $field_name => $field_info) {
-            if (array_key_exists($field_name, $fields_defined)) {
+            if (array_key_exists($field_name, $fields_defined) && isset($data->value()->$field_name[LANGUAGE_NONE][0])) {
                 return $data->value()->$field_name[LANGUAGE_NONE][0]['source_id'];
             }
         }
