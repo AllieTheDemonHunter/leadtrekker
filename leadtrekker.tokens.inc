@@ -73,7 +73,7 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
             module_load_include("inc", "entity", "includes/entity.wrapper");
             module_load_include("module", "entity");
             foreach($current_page['page_arguments'] as $key => $value) {
-                $entity = entity_metadata_wrapper($value->type, $value);
+                $entity = entity_metadata_wrapper($content_suggestion, $current_page['page_arguments'][0]);
                 $source_id = _has_source_id_field($entity);
             }
         }
