@@ -5,6 +5,7 @@
  * Token callbacks for the leadtrekker module.
  */
 
+
 /**
  * Implements hook_token_info().
  *
@@ -69,6 +70,8 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
         }
 
         if($content_suggestion == 'node' && isset($current_page['page_arguments'])) {
+            module_load_include("inc", "entity", "includes/entity.wrapper");
+            module_load_include("module", "entity");
             foreach($current_page['page_arguments'] as $key => $value) {
                 $entity = entity_metadata_wrapper($value->type, $value);
                 $source_id = _has_source_id_field($entity);
@@ -111,7 +114,7 @@ function _registered_source_id_fields()
  * @param EntityMetadataWrapper $data
  * @return bool
  */
-function _has_source_id_field(\EntityMetadataWrapper $data)
+function _has_source_id_field($data)
 {
     try {
         $fields_defined = _registered_source_id_fields();
