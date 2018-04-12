@@ -316,27 +316,6 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
 }
 
 /**
- * Implements hook_field_validate().
- *
- * @see source_id_field_field_widget_error()
- */
-function leadtrekker_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors)
-{
-    foreach ($items as $delta => $item) {
-        if (!empty($item['source_id'])) {
-            if (!is_numeric($item['source_id'])) {
-                $errors[$field['field_name']][$langcode][$delta][] = array(
-                    'error' => 'source_id_field_invalid',
-                    'message' => t('Source IDs have to be integers.'),
-                );
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-/**
  * Implements hook_webform_submission_insert().
  */
 function leadtrekker_webform_submission_insert($node, $submission)
@@ -567,7 +546,7 @@ function leadtrekker_field_info()
             'label' => t('Leadtrekker Source ID'),
             'description' => t('Associates nodes with Leadtrekker Source IDs.'),
             'default_widget' => 'leadtrekker_widget',
-            'default_formatter' => 'leadtrekker_text',
+            'default_formatter' => 'leadtrekker_simple_text',
         ),
     );
 }
@@ -581,19 +560,19 @@ function leadtrekker_field_info()
  */
 function leadtrekker_field_is_empty($item, $field)
 {
-    return !empty($item['source_id']);
+    return empty($item['source_id']);
 }
 
 /**
  * Implements hook_field_formatter_info().
  *
- * @see source_id_field_field_formatter_view()
+ * @see leadtrekker_field_formatter_view()
  */
 function leadtrekker_field_formatter_info()
 {
     return array(
         // This formatter just displays the hex value in the color indicated.
-        'leadtrekker_text' => array(
+        'leadtrekker_simple_text' => array(
             'label' => t('Simple text-based formatter'),
             'field types' => array('source_id'),
         ),
@@ -603,21 +582,23 @@ function leadtrekker_field_formatter_info()
 /**
  * Implements hook_field_formatter_view().
  *
- * @see source_id_field_field_formatter_info()
+ * @see leadtrekker_field_formatter_info()
  */
 function leadtrekker_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display)
 {
     $element = array();
 
     switch ($display['type']) {
-        case 'leadtrekker_text':
+        case 'leadtrekker_simple_text':
             foreach ($items as $delta => $item) {
-                $element[$delta] = array(
-                    // We create a render array to produce the desired output (integer).
-                    '#type' => 'html_tag',
-                    '#tag' => 'p',
-                    '#value' => $item['source_id'],
-                );
+                if(isset($item['source_id'])) {
+                    $element[$delta] = array(
+                        // We create a render array to produce the desired output (integer).
+                        '#type' => 'html_tag',
+                        '#tag' => 'p',
+                        '#value' => $item['source_id'],
+                    );
+                }
             }
             break;
     }
@@ -626,10 +607,28 @@ function leadtrekker_field_formatter_view($entity_type, $entity, $field, $instan
 }
 
 /**
- * Implements hook_field_widget_info().
+ * Implements hook_field_validate().
  *
- * Three widgets are provided.
- * - A simple text-only widget where the user enters the '#ffffff'.
+ * @see leadtrekker_field_widget_error()
+ */
+function leadtrekker_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors)
+{
+    foreach ($items as $delta => $item) {
+        if (!empty($item['source_id'])) {
+            if (!is_numeric($item['source_id'])) {
+                $errors[$field['field_name']][$langcode][$delta][] = array(
+                    'error' => 'source_id_field_invalid',
+                    'message' => t('Source IDs have to be integers.'),
+                );
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+/**
+ * Implements hook_field_widget_info().
  *
  * These widget types will eventually show up in hook_field_widget_form,
  * where we will have to flesh them out.
