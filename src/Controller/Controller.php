@@ -36,30 +36,6 @@ class Controller extends ControllerBase {
     );
   }
 
-  /**
-   * Gets response data and saves it in config.
-   *
-   * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   *   Returns Leadtrekker Connection Response(api key values like access_token,
-   *   refresh token, expire_in).
-   */
-  public function leadtrekkerOauthConnect() {
-    if (!empty($_GET['access_token']) && !empty($_GET['refresh_token']) && !empty($_GET['expires_in'])) {
-      drupal_set_message($this->t('Successfully authenticated with Leadtrekker.'), 'status', FALSE);
-
-      $this->config->set('leadtrekker_access_token', $_GET['access_token'])->save();
-      $this->config->set('leadtrekker_refresh_token', $_GET['refresh_token'])->save();
-      $this->config->set('leadtrekker_expires_in', ($_GET['expires_in'] + REQUEST_TIME))->save();
-    }
-
-    if (!empty($_GET['error']) && $_GET['error'] == "access_denied") {
-      drupal_set_message($this->t('You denied the request for authentication with Leadtrekker. Please click the button again and
-      choose the AUTHORIZE option.'), 'error', FALSE);
-    }
-    $redirect_url = Url::fromRoute('leadtrekker.admin_settings')->toString();
-    $response = new RedirectResponse($redirect_url);
-    $response->send();
-    return $response;
-  }
+//@TODO Implement new Leadtrekker API
 
 }

@@ -6,6 +6,7 @@
  *
  */
 use Drupal\Core\Url;
+use Drupal\Core\Messenger;
 
 /**
  * Implements hook_install().
@@ -13,10 +14,11 @@ use Drupal\Core\Url;
 function leadtrekker_install() {
   $site_mail = \Drupal::config('system.site')->get('mail');
   \Drupal::configFactory()->getEditable('leadtrekker.settings')->set('leadtrekker_debug_email', $site_mail)->save();
-  drupal_set_message(t('The Leadtrekker module has been successfully installed. Configure it in the @link.', array(
-    '@link' => Drupal::l(t('Leadtrekker integration settings'), Url::fromRoute('leadtrekker.admin_settings')),
-  )), 'status');
 
+  $m = Drupal::messenger();
+  $m->addMessage(t('The Leadtrekker module has been successfully installed. Configure it in the @link.', array(
+        '@link' => Drupal::l(t('Leadtrekker integration settings'), Url::fromRoute('leadtrekker.admin_settings')),
+    )), 'status');
 }
 
 /**

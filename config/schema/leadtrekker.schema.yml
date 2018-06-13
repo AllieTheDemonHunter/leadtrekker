@@ -2,15 +2,7 @@ leadtrekker.settings:
   type: mapping
   label: Settings
   mapping:
-    leadtrekker_log_code:
-      type: string
-    leadtrekker_access_token:
-      type: string
-    leadtrekker_portalid:
-      type: string
-    leadtrekker_debug_on:
+    source_id:
       type: integer
-    leadtrekker_refresh_token:
-      type: string
-    tracking_code_on:
+    webform_id:
       type: integer

@@ -17,25 +17,6 @@ function leadtrekker_help($route_name) {
   switch ($route_name) {
     case 'help.page.leadtrekker':
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Leadtrekker module provides leads integration with the Leadtrekker API, allowing forms created
-        with the Webform module to submit their data to Leadtrekker for leads tracking. It also allows you to easily embed
-        the Leadtrekker JavaScript tracking code in your site to track the visits of each lead. Further information is
-        available in the Drupal <a href="http://drupal.org/node/1195370">handbook pages for this module.</a>') . '</p>';
-      $output .= '<h3>' . t('Creating a Leadtrekker Webform') . '</h3>';
-      $output .= '<p>' . t("To have a Webform's data sent to Leadtrekker for leads tracking, complete the following steps:")
-        . '</p>';
-      $output .= '<ol>';
-      $output .= '<li>' . t('Connect to your Leadtrekker account from the Leadtrekker settings page (links below).') . '</li>';
-      $output .= '<li>' . t('From the Webform tab of any webform you will now see the Leadtrekker "subtab" link below. Click
-       on that link.') . '</li>';
-      $output .= '<li>' . t('On that page you will see a dropdown listing all of your Leadtrekker forms (set up from
-        Leadtrekker.com). Select the form you want to map to this Webform.') . '</li>';
-      $output .= '<li>' . t('Finally, just go through each Webform fields and map them to the Leadtrekker form fields
-        available in each dropdown. Click save and you\'re done!') . '</li>';
-      $output .= '</ol>';
-      $output .= '<p>' . t('The Webform will now automatically send any submissions directly to Leadtrekker form you
-        configured.') . '</p>';
-      $output .= '<h3>' . t('Leadtrekker Javascript tracking code') . '</h3>';
       $output .= '<p>' . t('Leadtrekker supports using a JavaScript tracking system to analyze potential leads on your site.
         You can get the JavaScript code from your Leadtrekker settings, under External Site Traffic Logging, and paste it
         into the Leadtrekker integration settings page in Drupal to have it automatically included on every page.') . '</p>';
