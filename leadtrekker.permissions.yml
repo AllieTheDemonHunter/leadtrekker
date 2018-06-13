@@ -1,0 +1,4 @@
+view recent leadtrekker leads:
+  title: 'View recent leadtrekker leads'
+  description: "View the recent leads block when it's enabled."
+  restrict access: TRUE

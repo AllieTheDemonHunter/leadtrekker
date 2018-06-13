@@ -1,0 +1,4 @@
+leadtrekker.form_settings:
+  route_name: leadtrekker.form_settings
+  title: Leadtrekker
+  weight: 10

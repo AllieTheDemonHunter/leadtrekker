@@ -1,0 +1,12 @@
+name: 'Leadtrekker Drupal integration'
+description: 'Provides Leadtrekker leads API integration with Drupal. Works with Leadtrekkers OAuth implementation'
+# core: 8.x
+type: module
+configure: leadtrekker.admin_settings
+dependencies:
+  - webform
+# Information added by Drupal.org packaging script on 2017-11-29
+version: '8.x-1.0-alpha1'
+core: '8.x'
+project: 'leadtrekker'
+datestamp: 1511957588

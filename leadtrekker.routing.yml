@@ -1,0 +1,21 @@
+leadtrekker.admin_settings:
+  path: /admin/config/services/leadtrekker
+  defaults:
+    _title: 'Leadtrekker integration settings'
+    _form: \Drupal\leadtrekker\Form\AdminSettings
+  requirements:
+    _permission: 'administer site configuration'
+leadtrekker.oauth_connect:
+  path: /leadtrekker/oauth
+  defaults:
+    _title: 'Leadtrekker OAuth redirect'
+    _controller: '\Drupal\leadtrekker\Controller\Controller::leadtrekkerOauthConnect'
+  requirements:
+    _permission: 'administer site configuration'
+leadtrekker.form_settings:
+  path: '/node/{node}/webform/leadtrekker'
+  defaults:
+    _title: Leadtrekker
+    _form: \Drupal\leadtrekker\Form\FormSettings
+  requirements:
+    _permission: 'bypass node access+access content'
