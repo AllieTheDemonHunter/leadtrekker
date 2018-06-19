@@ -169,7 +169,7 @@ function query(array $lead_data) {
     $method = 'POST';
     $cSession = curl_init();
     $headers = array();
-    $leadtrekker_key = Drupal::config("leadtrekker_key")->get();
+    $leadtrekker_key = \Drupal::config('leadtrekker.settings')->get('leadtrekker_key');
     $headers[] = 'api_key:' . $leadtrekker_key;
     curl_setopt($cSession, CURLOPT_URL, $url);
     curl_setopt($cSession, CURLOPT_RETURNTRANSFER, true);
