@@ -142,8 +142,10 @@ function leadtrekker_webform_submission_insert(Drupal\webform\Entity\WebformSubm
             $component_id = _leadtrekker_get_component_from_element($key);
             if($component_id) {
                 $component = _leadtrekker_component_field_match()['options'][$component_id];
-                if($component) {
+                if($component && $component !='custom_field') {
                     $lead_data[$component] = $value;
+                } else {
+                    $lead_data['custom_fields'][$key] = $value;
                 }
             } else {
                 $lead_data['custom_fields'][$key] = $value;
