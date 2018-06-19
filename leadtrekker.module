@@ -1,7 +1,5 @@
 <?php
 
-use Drupal\Core\Config\ConfigFactoryInterface;
-
 /**
  * @file
  * Sends Webform results to Leadtrekker's Forms API.
@@ -140,9 +138,9 @@ function leadtrekker_webform_submission_insert(Drupal\webform\Entity\WebformSubm
         $lead_data['source_id'] = $source_id;
         foreach ($submissionData as $key => $value) {
             $component_id = _leadtrekker_get_component_from_element($key);
-            if($component_id) {
+            if ($component_id) {
                 $component = _leadtrekker_component_field_match()['options'][$component_id];
-                if($component && $component !='custom_field') {
+                if ($component && $component != 'custom_field') {
                     $lead_data[$component] = $value;
                 } else {
                     $lead_data['custom_fields'][$key] = $value;
@@ -158,11 +156,13 @@ function leadtrekker_webform_submission_insert(Drupal\webform\Entity\WebformSubm
     query($lead_data);
 }
 
-function base_it(&$value) {
+function base_it(&$value)
+{
     $value = base64_encode($value);
 }
 
-function query(array $lead_data) {
+function query(array $lead_data)
+{
     array_walk_recursive($lead_data, "base_it");
 
     $data = json_encode($lead_data);
@@ -203,50 +203,15 @@ function leadtrekker_boot()
 }
 
 /**
- *  Checks for a pattern identifying Leadtrekker or PMailer.
- */
-function _leadtrekker_recognise($url)
-{
-    global $_SESSION;
-    $query_array = [];
-    parse_str($url, $query_array);
-
-    if (!empty($query_array)) {
-        $pattern['google'] = ['campaign', 'adgroup', 'keyword'];
-        $pattern['mail'] = ['utm_source', 'utm_medium', 'utm_campaign'];
-
-        foreach ($pattern as $source_to_check => $required_keys) {
-            foreach ($required_keys as $required_key) {
-                if (array_key_exists($required_key, $query_array)) {
-                    //This query set seems legit.
-                    _leadtrekker_register($query_array);
-                    return;
-                }
-            }
-        }
-    }
-}
-
-/**
- * @param $external_reference_info
- */
-function _leadtrekker_register($external_reference_info)
-{
-    global $_SESSION;
-    // We're saving it along with any LT submission.
-    // This also means that only one external named reference can be used.
-    $_SESSION['leadtrekker'] = $external_reference_info;
-}
-
-/**
  * Function which considers $_SESSION data for injection
  * with *any* lead creation.
  */
-function leadtrekker_inject_fields(&$lead_data) {
+function leadtrekker_inject_fields(&$lead_data)
+{
     global $_SESSION;
     $fields_aggregated = [];
 
-    if(isset($lead_data['custom_fields'])) {
+    if (isset($lead_data['custom_fields'])) {
         if (is_array($lead_data['custom_fields'])) {
             $fields_aggregated = $lead_data['custom_fields'];
         }

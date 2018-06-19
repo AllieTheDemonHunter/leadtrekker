@@ -1,0 +1,6 @@
+services:
+  leadtrekker.boot:
+    class: Drupal\leadtrekker\EventSubscriber\DefaultSubscriber
+    arguments: []
+    tags:
+      - { name: event_subscriber }
