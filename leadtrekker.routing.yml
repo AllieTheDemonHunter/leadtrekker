@@ -6,9 +6,20 @@ leadtrekker.admin_settings:
   requirements:
     _permission: 'administer site configuration'
 leadtrekker.form_settings:
-  path: '/node/{node}/webform/leadtrekker'
+  path: '/admin/structure/webform/manage/{webform}/leadtrekker'
   defaults:
     _title: Leadtrekker
     _form: \Drupal\leadtrekker\Form\FormSettings
+    _entity_form: webform.settings
   requirements:
     _permission: 'bypass node access+access content'
+leadtrekker.leadtrekker_form:
+  path: '/admin/config/leadtrekker/leadtrekker'
+  defaults:
+    _form: '\Drupal\leadtrekker\Form\LeadtrekkerForm'
+    _title: 'LeadtrekkerForm'
+  requirements:
+    _permission: 'access administration pages'
+  options:
+    _admin_route: TRUE
+

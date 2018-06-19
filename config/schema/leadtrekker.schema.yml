@@ -1,8 +1,17 @@
-leadtrekker.settings:
+leadtrekker.leadtrekker_source_id:
   type: mapping
-  label: Settings
+  label: Leadtrekker Source ID link to webform.
   mapping:
+    id:
+      type: text
     source_id:
-      type: integer
-    webform_id:
-      type: integer
+      type: text
+
+leadtrekker.leadtrekker_component:
+  type: mapping
+  label: Component Source link to webform element id.
+  mapping:
+    id:
+      type: text
+    component:
+      type: text

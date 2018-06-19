@@ -5,18 +5,16 @@
  * Installation file for leadtrekker.
  *
  */
+
 use Drupal\Core\Url;
-use Drupal\Core\Messenger;
 
 /**
  * Implements hook_install().
  */
-function leadtrekker_install() {
-  $site_mail = \Drupal::config('system.site')->get('mail');
-  \Drupal::configFactory()->getEditable('leadtrekker.settings')->set('leadtrekker_debug_email', $site_mail)->save();
-
-  $m = Drupal::messenger();
-  $m->addMessage(t('The Leadtrekker module has been successfully installed. Configure it in the @link.', array(
+function leadtrekker_install()
+{
+    $m = Drupal::messenger();
+    $m->addMessage(t('The Leadtrekker module has been successfully installed. Configure it in the @link.', array(
         '@link' => Drupal::l(t('Leadtrekker integration settings'), Url::fromRoute('leadtrekker.admin_settings')),
     )), 'status');
 }
@@ -24,43 +22,56 @@ function leadtrekker_install() {
 /**
  * Implements hook_uninstall().
  */
-function leadtrekker_uninstall() {
-  \Drupal::configFactory()->getEditable('leadtrekker.settings')->delete();
+function leadtrekker_uninstall()
+{
+    \Drupal::configFactory()->getEditable('leadtrekker.settings')->delete();
 }
 
 /**
  * Implements hook_schema().
  */
-function leadtrekker_schema() {
-  $schema['leadtrekker'] = array(
-    'description' => 'Base table for leadtrekker. Stores field mappings from webform fields to leadtrekker form fields.',
-    'fields' => array(
-      'id' => array(
-        'description' => 'The (Webform type id)/(node id of the webform) for this row.',
-        'type' => 'text',
-        'not null' => TRUE,
-      ),
-      'leadtrekker_guid' => array(
-        'description' => 'The leadtrekker form guid for this row.',
-        'type' => 'text',
-      ),
-      'webform_field' => array(
-        'description' => 'The webform field key for this row.',
-        'type' => 'text',
-      ),
-      'leadtrekker_field' => array(
-        'description' => 'The leadtrekker field key for this row.',
-        'type' => 'text',
-      ),
-    ),
-    'indexes' => array(
-      'id' => array(
-        'id',
-        array('leadtrekker_guid', 128),
-        array('webform_field', 128),
-        array('leadtrekker_field', 128),
-      ),
-    ),
-  );
-  return $schema;
+function leadtrekker_schema()
+{
+    $schema['leadtrekker_source_id'] = array(
+        'description' => 'Base table for Leadtrekker. Stores field mappings from webform fields to leadtrekker form fields.',
+        'fields' => array(
+            'id' => array(
+                'description' => 'The (Webform type id)/(node id of the webform) for this row.',
+                'type' => 'text',
+                'not null' => TRUE,
+            ),
+            'source_id' => array(
+                'description' => 'The Leadtrekker source_id.',
+                'type' => 'text',
+            )
+        ),
+        'indexes' => array(
+            'id' => array(
+                'id',
+                array('source_id', 32),
+            ),
+        ),
+    );
+
+    $schema['leadtrekker_component'] = array(
+        'description' => 'Additional table for Leadtrekker. Stores field mappings from webform fields to Leadtrekker component types.',
+        'fields' => array(
+            'id' => array(
+                'description' => 'The (Webform type id)/(node id of the webform) for this row.',
+                'type' => 'text',
+                'not null' => TRUE,
+            ),
+            'component' => array(
+                'description' => 'The Leadtrekker component.',
+                'type' => 'text',
+            )
+        ),
+        'indexes' => array(
+            'id' => array(
+                'id',
+                array('component', 32),
+            ),
+        ),
+    );
+    return $schema;
 }

@@ -3,3 +3,10 @@ leadtrekker.admin_settings:
   title: 'Leadtrekker integration settings'
   description: 'Set up Leadtrekker integration and leads insertion.'
   parent: system.admin_config_services
+leadtrekker.leadtrekker_form:
+  title: 'Leadtrekker Form'
+  route_name: leadtrekker.leadtrekker_form
+  description: 'A description for the menu entry'
+  parent: system.admin_config_system
+  weight: 99
+

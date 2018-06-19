@@ -2,7 +2,6 @@
 
 namespace Drupal\leadtrekker\Plugin\WebformHandler;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Annotation\Translation;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
@@ -177,19 +176,18 @@ class LeadtrekkerWebformHandler extends WebformHandlerBase
             ->execute()->fetchField();
 
 
-
         $api = "https://system.leadtrekker.com/api/createlead";
         $url = Url::fromUri($api)->toString();
 
-        $data['name']   = base64_encode('John Doe');
-        $data['email']  = base64_encode('john.doe@johnsbakery.com');
+        $data['name'] = base64_encode('John Doe');
+        $data['email'] = base64_encode('john.doe@johnsbakery.com');
         $data['number'] = base64_encode('0120040509');
-        $data['sourceid']    = base64_encode($sourceid);
-        $data['company']     = base64_encode('Johns Bakery');
+        $data['sourceid'] = base64_encode($sourceid);
+        $data['company'] = base64_encode('Johns Bakery');
 
         $data['custom_fields'] = array(
             'Webform' => base64_encode($form_title),
-            'Webform URL'     => base64_encode($page_url),
+            'Webform URL' => base64_encode($page_url),
         );
 
         $data = json_encode($data);

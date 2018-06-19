@@ -1,99 +1,266 @@
 <?php
 
+use Drupal\Core\Config\ConfigFactoryInterface;
+
 /**
  * @file
  * Sends Webform results to Leadtrekker's Forms API.
  */
 
-use Drupal\Component\Serialization\Json;
-use Drupal\Core\Url;
-use GuzzleHttp\Exception\RequestException;
-
 /**
  * Implements hook_help().
  */
-function leadtrekker_help($route_name) {
-  $output = '';
-  switch ($route_name) {
-    case 'help.page.leadtrekker':
-      $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('Leadtrekker supports using a JavaScript tracking system to analyze potential leads on your site.
+function leadtrekker_help($route_name)
+{
+    $output = '';
+    switch ($route_name) {
+        case 'help.page.leadtrekker':
+            $output .= '<h3>' . t('About') . '</h3>';
+            $output .= '<p>' . t('Leadtrekker supports using a JavaScript tracking system to analyze potential leads on your site.
         You can get the JavaScript code from your Leadtrekker settings, under External Site Traffic Logging, and paste it
         into the Leadtrekker integration settings page in Drupal to have it automatically included on every page.') . '</p>';
-      break;
+            break;
 
-    case 'leadtrekker.form_settings':
-      $output .= '<p>' . t("To post this form's results to Leadtrekker you will need to select the Leadtrekker form and map the
+        case 'leadtrekker.form_settings':
+            $output .= '<p>' . t("To post this form's results to Leadtrekker you will need to select the Leadtrekker form and map the
         webform fields to the available Leadtrekker fields.") . '</p>';
-      break;
-  }
-  return $output;
+            break;
+    }
+    return $output;
 }
 
 /**
- * Returns the default value for the given arguments.
+ * Implements hook_form_alter().
  */
-function _leadtrekker_default_value($id, $leadtrekker_guid = NULL, $webform_field = NULL) {
-  if (empty($leadtrekker_guid)) {
-    return db_query_range("SELECT leadtrekker_guid FROM {leadtrekker} h WHERE h.id = :id", 0, 1, array(':id' => $id))->fetchField();
-  }
-  else {
-    return db_query_range("SELECT leadtrekker_field FROM {leadtrekker} h WHERE h.id = :id AND h.leadtrekker_guid = :guid AND h.webform_field = :webform_field", 0, 1, array(
-      ':id' => $id,
-      ':guid' => $leadtrekker_guid,
-      ':webform_field' => $webform_field,
-    ))->fetchField();
-  }
+function leadtrekker_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id)
+{
+    if ($form_id == "webform_ui_element_form") {
+        $leadtrekker_field_types = _leadtrekker_component_field_match();
+
+
+        $form['web_service'] = [
+            '#type' => 'fieldset',
+            '#title' => 'Web Services',
+            '#default_value' => FALSE,
+            '#weight' => 5,
+            'leadtrekker_component' => [
+                '#type' => 'select',
+                '#title' => 'Leadtrekker Component',
+                '#default_value' => '',
+                '#description' => 'Leadtrekker primary field identifier.',
+                '#weight' => 6,
+                '#parents' => ['extra', 'leadtrekker_component'],
+                '#disabled' => FALSE,
+                '#value_callback' => '_leadtrekker_value_primary',
+                '#options' => $leadtrekker_field_types['form_options'],
+            ]
+        ];
+
+        foreach (array_keys($form['actions']) as $action) {
+            if ($action != 'preview' && isset($form['actions'][$action]['#type']) && $form['actions'][$action]['#type'] === 'submit') {
+                $form['actions'][$action]['#submit'][] = '_leadtrekker_sumbit';
+            }
+        }
+    }
+}
+
+function _leadtrekker_get_component_from_element($element)
+{
+    $db = \Drupal::database();
+    $result = $db->select("leadtrekker_component", 'l')->fields('l', ['component'])->condition('id', $element)->execute()->fetch();
+
+    if (is_object($result)) {
+        return $result->component;
+    }
+}
+
+function _leadtrekker_value_primary($variables, $some = '', \Drupal\Core\Form\FormState $form_state)
+{
+    $id = $form_state->getValue('key');
+    return _leadtrekker_get_component_from_element($id);
+}
+
+function _leadtrekker_sumbit(&$form, \Drupal\Core\Form\FormState $form_state)
+{
+    $db = \Drupal::database();
+    $component = $form_state->getValue('extra')['leadtrekker_component'];
+    $id = $form_state->getValue('key');
+
+    $db->delete('leadtrekker_component')->condition('component', $component)->execute();
+
+    $fields = [
+        'id' => $id,
+        'component' => $component
+    ];
+    $db->insert('leadtrekker_component')->fields($fields)->execute();
+
+    drupal_set_message('The configuration options have been saved.');
 }
 
 /**
- * Gets the list of forms from Leadtrekker via the API.
+ * @return array
  */
-function _leadtrekker_get_forms() {
-  $access_token = \Drupal::config('leadtrekker.settings')->get('leadtrekker_access_token');
-
-  if (empty($access_token)) {
-    return array('error' => t('This site is not connected to a Leadtrekker Account.'));
-  }
-
-  $api = 'https://api.hubapi.com/contacts/v1/forms';
-  $options = [
-    'query' => ['access_token' => $access_token],
-  ];
-  $url = Url::fromUri($api, $options)->toString();
-  try {
-    $response = \Drupal::httpClient()->get($url);
-    $data = (string) $response->getBody();
-    return ['value' => Json::decode($data)];
-  }
-  catch (RequestException $e) {
-
-  }
+function _leadtrekker_component_field_match()
+{
+    return [
+        'options' => [
+            '',
+            'name',
+            'email',
+            'number',
+            'custom_field',
+            'company',
+        ],
+        'form_options' => [
+            t('Disabled'),
+            t('Lead Name'),
+            t('Lead Email'),
+            t('Lead Number'),
+            t('Custom Field'),
+            t('Lead Company'),
+        ]
+    ];
 }
 
 /**
- * Implements hook_mail().
+ * Implements hook_ENTITY_TYPE_insert().
  */
-function leadtrekker_mail($key, &$message, $params) {
-  $message['subject'] = t('Leadtrekker leads insertion error');
+function leadtrekker_webform_submission_insert(Drupal\webform\Entity\WebformSubmission $webformSubmission)
+{
+    $the_webform = $webformSubmission->referencedEntities()[1];
+    $form_id = $the_webform->id();
 
-  switch ($key) {
-    case 'http_error':
-      $message['body'][] = t('When attempting to submit the form "@form" to Leadtrekker, a HTTP error occurred.', array(
-        '@form' => $params['node_title'],
-      ));
-      break;
+    //Get the webform's source_id
+    $db = \Drupal::database();
+    $result = $db->select("leadtrekker_source_id", 'l')->fields('l', ['source_id'])->condition('id', $form_id)->execute()->fetch();
+    $source_id = $result->source_id;
+    $submissionData = $webformSubmission->getData();
+    //Get a list of applicable values.
+    if (isset($submissionData) && is_array($submissionData) && $source_id != '') {
+        $lead_data['source_id'] = $source_id;
+        foreach ($submissionData as $key => $value) {
+            $component_id = _leadtrekker_get_component_from_element($key);
+            if($component_id) {
+                $component = _leadtrekker_component_field_match()['options'][$component_id];
+                if($component) {
+                    $lead_data[$component] = $value;
+                }
+            } else {
+                $lead_data['custom_fields'][$key] = $value;
+            }
+        }
+    }
 
-    case 'hub_error':
-      $message['body'][] = t('Upon submitting the Webform "@form" to Leadtrekker, an error was returned.', array(
-        '@form' => $params['node_title'],
-      ));
-      break;
-  }
+    leadtrekker_inject_fields($lead_data);
 
-  $message['body'][] = t('Error message: @message', array('@message' => $params['errormsg']));
-  $message['body'][] = t('Leadtrekker POST URL: @url', array('@url' => $params['leadtrekker_url']));
-  $message['body'][] = t('To adjust the debugging settings, visit @url', array(
-    '@url' => Url::fromRoute('leadtrekker.admin_settings')->toString(),
-  ));
+    query($lead_data);
+}
+
+function base_it(&$value) {
+    $value = base64_encode($value);
+}
+
+function query(array $lead_data) {
+    array_walk_recursive($lead_data, "base_it");
+
+    $data = json_encode($lead_data);
+
+    $url = 'https://system.leadtrekker.com/api/createlead';
+    $method = 'POST';
+    $cSession = curl_init();
+    $headers = array();
+    $leadtrekker_key = Drupal::config("leadtrekker_key")->get();
+    $headers[] = 'api_key:' . $leadtrekker_key;
+    curl_setopt($cSession, CURLOPT_URL, $url);
+    curl_setopt($cSession, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($cSession, CURLOPT_HEADER, false);
+    curl_setopt($cSession, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+    curl_setopt($cSession, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($cSession, CURLOPT_SSL_VERIFYPEER, false);
+    $headers[] = 'Content-Type: application/json';
+    curl_setopt($cSession, CURLOPT_HTTPHEADER, $headers);
+    curl_exec($cSession);
+    curl_close($cSession);
+}
+
+/**
+ * Implements hook_boot().
+ */
+function leadtrekker_boot()
+{
+    global $_SESSION, $_SERVER;
+
+    if (!session_status()) {
+        session_start();
+    }
+
+    //Find extra data to attach to leadtrekker submissions
+    if ($_SERVER['QUERY_STRING'] != "") {
+        _leadtrekker_recognise($_SERVER['QUERY_STRING']);
+    }
+}
+
+/**
+ *  Checks for a pattern identifying Leadtrekker or PMailer.
+ */
+function _leadtrekker_recognise($url)
+{
+    global $_SESSION;
+    $query_array = [];
+    parse_str($url, $query_array);
+
+    if (!empty($query_array)) {
+        $pattern['google'] = ['campaign', 'adgroup', 'keyword'];
+        $pattern['mail'] = ['utm_source', 'utm_medium', 'utm_campaign'];
+
+        foreach ($pattern as $source_to_check => $required_keys) {
+            foreach ($required_keys as $required_key) {
+                if (array_key_exists($required_key, $query_array)) {
+                    //This query set seems legit.
+                    _leadtrekker_register($query_array);
+                    return;
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @param $external_reference_info
+ */
+function _leadtrekker_register($external_reference_info)
+{
+    global $_SESSION;
+    // We're saving it along with any LT submission.
+    // This also means that only one external named reference can be used.
+    $_SESSION['leadtrekker'] = $external_reference_info;
+}
+
+/**
+ * Function which considers $_SESSION data for injection
+ * with *any* lead creation.
+ */
+function leadtrekker_inject_fields(&$lead_data) {
+    global $_SESSION;
+    $fields_aggregated = [];
+
+    if(isset($lead_data['custom_fields'])) {
+        if (is_array($lead_data['custom_fields'])) {
+            $fields_aggregated = $lead_data['custom_fields'];
+        }
+    }
+
+    if (isset($_SESSION['leadtrekker'])) {
+        $custom_field_data = $_SESSION['leadtrekker'];
+
+        if (is_array($custom_field_data) && count($custom_field_data) > 0) {
+            $fields_aggregated = array_merge($fields_aggregated, $custom_field_data);
+        }
+    }
+
+    unset($_SESSION['leadtrekker']);
+
+    foreach ($fields_aggregated as $key => $field_data) {
+        $lead_data["custom_fields"][$key] = $field_data;
+    }
 }
