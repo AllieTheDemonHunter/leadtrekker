@@ -59,7 +59,7 @@ class DefaultSubscriber implements EventSubscriberInterface
      */
     public function kernel_controller(Event $event)
     {
-        drupal_set_message('Event kernel.controller thrown by Subscriber in module leadtrekker.', 'status', TRUE);
+
     }
 
     /**
