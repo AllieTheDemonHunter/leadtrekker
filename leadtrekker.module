@@ -414,6 +414,8 @@ function send_lead($source_id, $data, $send_mail)
         include_once("leadtrekker.api.inc");
         $leadtrekker_api_key = variable_get('leadtrekker_api_key', LEADTREKKER_KEY_DEBUG);
         $debug = variable_get('leadtrekker_debug', 0);
+
+
         $lt = new lead_trekker($leadtrekker_api_key, $source_id, $data, $send_mail, $debug);
 
         if (!$lt) {

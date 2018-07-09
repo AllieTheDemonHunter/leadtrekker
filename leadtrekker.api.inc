@@ -91,12 +91,7 @@ class lead_trekker implements \leadtrekker\lead_trekker {
      * value of curl_exec() instead of outputting it out directly.
      */
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-
-    if ($this->debug) {
-      curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-    } else {
-      curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-    }
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
 
     return $ch;
   }
