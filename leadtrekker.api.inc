@@ -12,177 +12,141 @@ const SEND_MAIL = "notifybyemail";
 const CREATEACCOUNT_ONLY_EMAIL = "createaccount_only_email";
 const CREATE_ACCOUNT = CREATEACCOUNT_ONLY_EMAIL; // This is because the createaccount method has been deprecated.
 
-const LEADTREKKER_URL = "http://my.leadtrekker.co.za/api.php";
+const LEADTREKKER_URL = "https://system.leadtrekker.com/api/createlead";
 const LEADTREKKER_URL_DEBUG = "http://dev-leadtrekker.starbright.co.za/api.php";
 const LEADTREKKER_KEY_DEBUG = "KK3UY2WGD96II5GPNSWIG731";
 
 include_once("leadtrekker/lead_trekker.php");
 
-class lead_trekker implements \leadtrekker\lead_trekker {
+class lead_trekker
+{
 
-  public $lead_id = FALSE;
-  private $curl_resource;
-  protected $leadtrekker_api_key = LEADTREKKER_KEY_DEBUG;
-  protected $debug = FALSE;
-  public $send_mail = TRUE;
+    public $lead_id = FALSE;
+    public $send_mail = TRUE;
+    var $sourceid;
+    var $cookie_name = "leadtrekker";
+    var $leadtrekker_api_url = LEADTREKKER_URL;
 
-  // Typically used to identify which webform Leadtrekker is dealing with.
-  var $source_id;
-  var $cookie_name = "leadtrekker";
-  var $leadtrekker_api_url = LEADTREKKER_URL;
+    // Typically used to identify which webform Leadtrekker is dealing with.
+    protected $leadtrekker_api_key = LEADTREKKER_KEY_DEBUG;
+    protected $debug = FALSE;
+    protected $data;
 
-  public function __construct($leadtrekker_api_key, $source_id, $lead_data, $send_mail = TRUE, $debug = FALSE) {
-    $this->debug = $debug;
-    $this->send_mail = $send_mail;
-    
-    if($this->debug) {
-      $this->leadtrekker_api_url = LEADTREKKER_URL_DEBUG;
-    }
+    public function __construct($leadtrekker_api_key, $source_id, $lead_data, $send_mail = TRUE, $debug = FALSE)
+    {
+        $this->debug = $debug;
+        $this->send_mail = $send_mail;
+        $this->data = $lead_data;
 
-    if($leadtrekker_api_key != '') {
-      $this->leadtrekker_api_key =  $leadtrekker_api_key;
-    }
-
-    if($source_id == CREATEACCOUNT_ONLY_EMAIL) {
-      $function = CREATEACCOUNT_ONLY_EMAIL;
-    } else {
-      $function = CREATE_LEAD;
-    }
-    
-    // Source ids are unique to webform instances.
-    if (!$this->debug || !$source_id == CREATEACCOUNT_ONLY_EMAIL) {
-      $this->source_id = $source_id;
-    } else {
-      $this->source_id = 1; // Development value.
-    }
-
-    $this->curl_resource = $this->_connect(); // Once
-    if (!$this->lead_id) {
-
-        if ($this->query($function, $lead_data)) {
-
-          //INJECT VARS FROM $_SESSION && #fields if set.
-          $this->leadtrekker_inject_fields($lead_data);
-
-          if ($this->send_mail) {
-            $this->query(SEND_MAIL);
-          }
-
-          return TRUE;
-      }
-    }
-
-    return FALSE;
-  }
-
-  public function __destruct() {
-    if ($this->curl_resource) {
-      curl_close($this->curl_resource);
-    }
-  }
-
-  public function _connect() {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $this->leadtrekker_api_url);
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    /**
-     * @value CURLOPT_RETURNTRANSFER (bool) option below;
-     * TRUE to return the transfer as a string of the return
-     * value of curl_exec() instead of outputting it out directly.
-     */
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-
-    return $ch;
-  }
-
-  public function query($function, $data = array()) {
-
-    $data["function"] = $function;
-    $data['key'] = $this->leadtrekker_api_key;
-    $data["sourceid"] = $this->source_id; // I believe that this is not required when submitting create account by email only.
-    $data["notifybyemail"] = $this->send_mail;
-    if ($this->lead_id) {
-      $data["leadid"] = $this->lead_id;
-    }
-
-    foreach($data as $key => $value ) {
-      if(is_string($value)) {
-        $new_array[$key] = urlencode($value);
-      } elseif(is_array($value)) {
-        foreach ($value as $key2 => $value2) {
-          if (is_string($value2)) {
-            $new_array[$key][$key2] = urlencode($value2);
-          } else {
-            $new_array[$key][$key2] = $value2;
-          }
+        if ($this->debug) {
+            $this->leadtrekker_api_url = LEADTREKKER_URL_DEBUG;
         }
-      } else {
-        $new_array[$key] = $value;
-      }
+
+        if ($leadtrekker_api_key != '') {
+            $this->leadtrekker_api_key = $leadtrekker_api_key;
+        }
+
+        // Source ids are unique to webform instances.
+        if (!$this->debug || !$source_id == CREATEACCOUNT_ONLY_EMAIL) {
+            $this->data['sourceid'] = $source_id;
+        } else {
+            $this->data['sourceid'] = 12345; // Development value.
+        }
+
+        $this->leadtrekker_inject_fields();
+        return $this->query();
     }
 
-    if ($this->curl_resource) {
-      $post_string = $data;
-    }
-    else {
-      return FALSE; // Shouldn't happen.
+    protected function translate_field_names ($original) {
+        $translation_table = [
+
+                'leadname' => 'name',
+                'leademail' => 'email',
+                'leadnumber' => 'number',
+                'custom_field' => 'custom_field',
+                'company' => 'company',
+                'source_ids' => 'source_ids'
+        ];
+
+        foreach($original as $original_key => $value) {
+            if(array_key_exists("$original_key", $translation_table)) {
+                $new[$translation_table[$original_key]] = $value;
+            } else  {
+                $new[$original_key] = $value;
+            }
+        }
+
+        return $new;
     }
 
-    @curl_setopt($this->curl_resource, CURLOPT_POSTFIELDS, $post_string);
+    public function query()
+    {
 
-    // The Leadtrekker Api should return an id.
-    if (!$this->lead_id) {
-      // Init call
-      $this->lead_id = curl_exec($this->curl_resource);
+        $encode_me = function (&$some_value) {
+            $some_value = base64_encode($some_value);
+        };
 
-      // Checking for problems.
-      if (!is_numeric($this->lead_id)) {
-        $this->lead_id; // Could contain an error message.
-        return FALSE;
-      }
-    }
-    elseif ($response = curl_exec($this->curl_resource)) {
-      if ($response == "OK") {
+        array_walk_recursive($this->data, $encode_me);
+
+        $this->data = $this->translate_field_names($this->data);
+
+        array_walk_recursive($this->data, "base_it");
+
+        $data = json_encode($this->data);
+
+        $url = 'https://system.leadtrekker.com/api/createlead';
+        $method = 'POST';
+        $cSession = curl_init();
+        $headers = array();
+        $headers[] = 'api_key:' . $this->leadtrekker_api_key;
+        curl_setopt($cSession, CURLOPT_URL, $url);
+        curl_setopt($cSession, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cSession, CURLOPT_HEADER, false);
+        curl_setopt($cSession, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+        curl_setopt($cSession, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($cSession, CURLOPT_SSL_VERIFYPEER, false);
+        $headers[] = 'Content-Type: application/json';
+        curl_setopt($cSession, CURLOPT_HTTPHEADER, $headers);
+        $this->lead_id = curl_exec($cSession);
+        curl_close($cSession);
+
+        // Checking for problems.
+        if (!is_numeric($this->lead_id)) {
+            $this->lead_id; // Could contain an error message.
+            return FALSE;
+        }
+
         return TRUE;
-      }
-      else {
-        return FALSE;
-      }
     }
 
-    return TRUE;
-  }
+    /**
+     * Function which considers $_SESSION data for injection
+     * with *any* lead creation.
+     */
+    public function leadtrekker_inject_fields()
+    {
+        global $_SESSION;
+        $fields_aggregated = [];
 
-  /**
-   * Function which considers $_SESSION data for injection
-   * with *any* lead creation.
-   */
-  public function leadtrekker_inject_fields(&$lead_data) {
-    global $_SESSION;
-    $fields_aggregated = [];
+        if (isset($this->data['custom_fields'])) {
+            if (is_array($this->data['custom_fields'])) {
+                $fields_aggregated = $this->data['custom_fields'];
+            }
+        }
 
-    if(isset($lead_data['#fields'])) {
-        if (is_array($lead_data['#fields'])) {
-            $fields_aggregated = $lead_data['#fields'];
+        if (isset($_SESSION['leadtrekker'])) {
+            $custom_field_data = $_SESSION['leadtrekker'];
+
+            if (is_array($custom_field_data) && count($custom_field_data) > 0) {
+                $fields_aggregated = array_merge($fields_aggregated, $custom_field_data);
+            }
+        }
+
+        unset($_SESSION['leadtrekker']);
+
+        foreach ($fields_aggregated as $key => $field_data) {
+            //This overrides/re-sets existing custom fields.
+            $this->data['custom_fields'][$key] = $field_data;
         }
     }
-
-    if (isset($_SESSION['leadtrekker'])) {
-      $custom_field_data = $_SESSION['leadtrekker'];
-
-      if (is_array($custom_field_data) && count($custom_field_data) > 0) {
-        $fields_aggregated = array_merge($fields_aggregated, $custom_field_data);
-      }
-    }
-
-    unset($_SESSION['leadtrekker']);
-
-    foreach ($fields_aggregated as $key => $field_data) {
-      $this->query(ADD_FIELD_TO_LEAD, array(
-        'fieldname' => $key,
-        'fieldvalue' => $field_data
-      ));
-    }
-  }
 }

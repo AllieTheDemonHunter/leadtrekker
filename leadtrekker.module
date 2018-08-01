@@ -351,12 +351,7 @@ function leadtrekker_webform_submission_insert($node, $submission)
             // Check if this field is marked as a custom field.
             if ($leadtrekker_webform_component_primaries == 'custom_field') {
                 $field_key = $node->webform['components'][$cid]['name'];
-                if (isset($node->webform['components'][$cid]['extra']['multiple']) && $node->webform['components'][$cid]['extra']['multiple'] === 1) {
-                    $webform_fields['#fields'][$field_key] = $submitted_value;
-                } else {
-                    $webform_fields['#fields'][$field_key] = $submitted_value;
-                }
-
+                $webform_fields['custom_fields'][$field_key] = $submitted_value;
             } else {
                 $field_key = $leadtrekker_webform_component_primaries; //Required Leadtrekker fields.
                 /**
@@ -395,7 +390,6 @@ function leadtrekker_webform_submission_insert($node, $submission)
     } else {
         $source_id = variable_get('leadtrekker_webform_source_id_' . $node->nid, '');
     }
-
 
     if (!empty($webform_fields) && count($webform_fields) >= 3) {
         $send_mail = variable_get('leadtrekker_webform_notify_email_' . $node->nid, 1);

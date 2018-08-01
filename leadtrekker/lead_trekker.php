@@ -12,13 +12,11 @@ interface lead_trekker {
 
   public function __destruct();
 
-  public function _connect();
-
-  public function query($function, $data = array());
+  public function query();
 
   /**
    * Function which considers $_SESSION data for injection
    * with *any* lead creation.
    */
-  public function leadtrekker_inject_fields(&$lead_data);
+  public function leadtrekker_inject_fields();
 }
