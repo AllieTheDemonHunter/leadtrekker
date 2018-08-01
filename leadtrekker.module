@@ -163,6 +163,7 @@ function base_it(&$value)
 
 function query(array $lead_data)
 {
+    leadtrekker_inject_fields($lead_data);
     array_walk_recursive($lead_data, "base_it");
 
     $data = json_encode($lead_data);
@@ -183,6 +184,7 @@ function query(array $lead_data)
     curl_setopt($cSession, CURLOPT_HTTPHEADER, $headers);
     curl_exec($cSession);
     curl_close($cSession);
+
 }
 
 /**
