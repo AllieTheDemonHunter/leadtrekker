@@ -1,0 +1,28 @@
+{
+  "name": "starbright/leadtrekker",
+  "description": "Integrates Leadtrekker in Drupal.",
+  "type": "drupal-module",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Allie du Plooy",
+      "role": "Developer",
+      "homepage": "http://allie.co.za",
+      "email": "allie.rockdev@gmail.com"
+    }
+  ],
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/AllieTheDemonHunter/leadtrekker"
+    }
+  ],
+  "require": {
+    "drupal/drupal": "*"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": false,
+  "config": {
+    "sort-packages": true
+  }
+}
