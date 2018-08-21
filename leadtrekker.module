@@ -30,7 +30,7 @@ function leadtrekker_menu()
         'type' => MENU_NORMAL_ITEM,
         'file' => 'leadtrekker.admin.inc'
     ];
-    $items['leadtrekker/source_ids'] = [
+    $items['admin/leadtrekker/source_ids'] = [
         'title' => 'Leadtrekker Source ID',
         'description' => 'Leadtrekker integration with Webform.',
         'page callback' => '_leadtrekker_source_ids',
@@ -121,7 +121,7 @@ function _leadtrekker_source_ids()
             $commands[] = ajax_command_append('#source-ids', $output);
             $page = array('#type' => 'ajax', '#commands' => $commands, ajax_command_settings('settings', false));
         } else {
-            $page = ajax_command_settings('settings', false);
+            $page = ajax_command_settings('settings', true);
         }
     }
 
@@ -240,18 +240,6 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
     $current_leadtrekker_primary_component = variable_get('leadtrekker_webform_component_' . $form['nid']['#value'] . '_primary_' . $form['cid']['#value'], 3);
 
     if ($form['type']['#value'] == "select") {
-        $form["#validate"][] = "leadtrekker_form_webform_configure_form_validate";
-
-        /**
-         * Go check the values after they've changed/not (textarea blur).
-         */
-        $form['extra']['items']["#ajax"] = [
-            'path' => 'leadtrekker/source_ids',
-            'wrapper' => 'source-ids',
-            'effect' => 'fade',
-            'event' => 'blur'
-        ];
-
         /**
          * If Source IDs have been selected,
          * bring in the analysis of the validity status.
@@ -299,12 +287,7 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
             '#attached' => [
                 'css' => [$css_path]
             ],
-            "#ajax" => [
-                'path' => 'leadtrekker/source_ids',
-                'wrapper' => 'source-ids',
-                'effect' => 'fade',
-                'event' => 'blur'
-            ],
+
         ]
     ];
 
@@ -339,7 +322,7 @@ function leadtrekker_webform_submission_insert($node, $submission)
             $submitted_value = $value[0];
         }
 
-        if (isset($node->webform['components'][$cid]['extra']['leadtrekker']) && $node->webform['components'][$cid]['extra']['leadtrekker'] === TRUE) {
+        if (isset($node->webform['components'][$cid]['extra']['leadtrekker']) && $node->webform['components'][$cid]['extra']['leadtrekker'] == TRUE) {
 
             //Check the defined data type for the webform field.
             $data_type = $node->webform['components'][$cid]['type'];
@@ -385,9 +368,12 @@ function leadtrekker_webform_submission_insert($node, $submission)
      * can override the site wide default.
      */
 
-    if ($field_key == "source_ids" && is_numeric($submitted_value)) {
-        $source_id = $submitted_value;
-    } else {
+
+        if ($field_key == "source_ids" && is_numeric($submitted_value)) {
+            $source_id = $submitted_value;
+        }
+
+     else {
         $source_id = variable_get('leadtrekker_webform_source_id_' . $node->nid, '');
     }
 
@@ -428,7 +414,7 @@ function send_lead($source_id, $data, $send_mail)
  * @param array $form_state
  * @return bool|int
  */
-function _leadtrekker_value($element, $input = FALSE, $form_state = [])
+function _leadtrekker_value(&$element, $input = FALSE, $form_state = [])
 {
     if ($input === FALSE) {
         return isset($element['#default_value']) ? $element['#default_value'] : 0;
@@ -436,7 +422,8 @@ function _leadtrekker_value($element, $input = FALSE, $form_state = [])
         variable_set('leadtrekker_webform_component_' . $form_state['build_info']['args'][1]['nid'] . '_key_' . $form_state['build_info']['args'][1]['cid'], $input);
     }
 
-    return TRUE;
+    $element["#value"] = $input;
+    return $input;
 }
 
 /**
@@ -465,16 +452,16 @@ function _leadtrekker_value_notify_mail($element, $input = FALSE, $form_state = 
  * @param array $form_state
  * @return bool|int
  */
-function _leadtrekker_value_primary($element, $input = FALSE, $form_state = [])
+function _leadtrekker_value_primary(&$element, $input = FALSE, $form_state = [])
 {
     if ($input === FALSE) {
         return isset($element['#default_value']) ? $element['#default_value'] : 3;
     } elseif (isset($form_state['build_info']['args'][1]['cid'])) {
         variable_set('leadtrekker_webform_component_' . $form_state['build_info']['args'][1]['nid'] . '_primary_' . $form_state['build_info']['args'][1]['cid'], $input);
-        return $input;
     }
 
-    return TRUE;
+    $element["#value"] = $input;
+    return $input;
 }
 
 /**

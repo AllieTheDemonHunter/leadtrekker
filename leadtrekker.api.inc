@@ -89,9 +89,7 @@ class lead_trekker
         array_walk_recursive($this->data, $encode_me);
 
         $this->data = $this->translate_field_names($this->data);
-
-        array_walk_recursive($this->data, $encode_me);
-
+        
         $data = json_encode($this->data);
 
         $url = 'https://system.leadtrekker.com/api/createlead';
