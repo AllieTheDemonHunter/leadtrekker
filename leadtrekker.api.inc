@@ -89,14 +89,17 @@ class lead_trekker
         array_walk_recursive($this->data, $encode_me);
 
         $this->data = $this->translate_field_names($this->data);
-        
+
+        array_walk_recursive($this->data, $encode_me);
+
         $data = json_encode($this->data);
 
+        $url = 'https://system.leadtrekker.com/api/createlead';
         $method = 'POST';
         $cSession = curl_init();
         $headers = array();
         $headers[] = 'api_key:' . $this->leadtrekker_api_key;
-        curl_setopt($cSession, CURLOPT_URL, $this->leadtrekker_api_url);
+        curl_setopt($cSession, CURLOPT_URL, $url);
         curl_setopt($cSession, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($cSession, CURLOPT_HEADER, false);
         curl_setopt($cSession, CURLOPT_CUSTOMREQUEST, strtoupper($method));
