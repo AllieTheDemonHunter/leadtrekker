@@ -196,10 +196,14 @@ function leadtrekker_form_webform_configure_form_validate($form, &$form_state)
  */
 function leadtrekker_ajax_render_alter(&$commands)
 {
-    if($commands[(count($commands) - 1)]["selector"] == "#source_id") {
-        $commands_override[] = $commands[0]; // Retain the settings command.
-        $commands_override[] = array_pop($commands); // Should be the most recently added?
-        $commands = $commands_override;
+    if(isset($commands[(count($commands) - 1)])) {
+        if(isset($commands[(count($commands) - 1)]["selector"])) {
+            if($commands[(count($commands) - 1)]["selector"] == "#source_id") {
+                $commands_override[] = $commands[0]; // Retain the settings command.
+                $commands_override[] = array_pop($commands); // Should be the most recently added?
+                $commands = $commands_override;
+            }
+        }
     }
 }
 

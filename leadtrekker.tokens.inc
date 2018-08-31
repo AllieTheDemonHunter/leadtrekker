@@ -46,7 +46,7 @@ function leadtrekker_tokens($type, $tokens, array $data = array(), array $option
 
     if (isset($data['entity_type']) && isset($data['entity'])) {
         $source_id = _has_source_id_field(entity_metadata_wrapper($data['entity_type'], $data['entity']));
-    } else {
+    } elseif($type != "file") {
         /**
          * All the defined fields, each containing a 'type' key which contains the base field_widget
          */
