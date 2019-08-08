@@ -18,7 +18,7 @@
     }
   ],
   "require": {
-    "drupal/drupal": "*"
+    "drupal/webform": "*"
   },
   "minimum-stability": "dev",
   "prefer-stable": false,
