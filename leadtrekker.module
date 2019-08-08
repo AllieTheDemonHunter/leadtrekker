@@ -133,7 +133,7 @@ function leadtrekker_webform_submission_insert(Drupal\webform\Entity\WebformSubm
   $submissionData = $webformSubmission->getData();
   //Get a list of applicable values.
   if (isset($submissionData) && is_array($submissionData) && $source_id != '') {
-    $lead_data['source_id'] = $source_id;
+    $lead_data['sourceid'] = $source_id;
     foreach ($submissionData as $key => $value) {
       $component_id = _leadtrekker_get_component_from_element($key);
       if ($component_id) {
