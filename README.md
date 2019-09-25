@@ -22,6 +22,9 @@ Visit the official Leadtrekker API page for more info: http://docs.leadtrekker.c
 ## Known Issues
 
 **@TODO** The source_id field has to be recognised irrespective of what its field instance's name is. **@FIXED** `1.2.2`
+
 **@FIXED** `1.2.2` Multiple selects/radios which didn't register correctly have been improved.
+
 **@TODO** `1.3.0-dev` superceeds version `1.2.2` as it had been rebuilt to exclude the source_id submodule.
+
 **UPDATE** `1.2.2` has a flaw and upgrading is recommended. Make a backup.
