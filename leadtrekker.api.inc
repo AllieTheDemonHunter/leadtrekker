@@ -59,6 +59,7 @@ class lead_trekker
 
   protected function translate_field_names($original)
   {
+    $new = [];
     $translation_table = [
 
       'leadname' => 'name',

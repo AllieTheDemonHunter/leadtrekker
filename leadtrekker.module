@@ -308,7 +308,7 @@ function leadtrekker_form_webform_component_edit_form_alter(&$form, &$form_state
  */
 function leadtrekker_webform_submission_insert($node, $submission)
 {
-
+  $source_id = null;
   global $_SESSION;
 
   if ($submission->is_draft !== 0) {
@@ -381,7 +381,7 @@ function leadtrekker_webform_submission_insert($node, $submission)
 
 
 
-  if (!empty($webform_fields) && count($webform_fields) >= 3) {
+  if (!empty($webform_fields) && count($webform_fields) >= 3 && is_int($source_id)) {
     $send_mail = variable_get('leadtrekker_webform_notify_email_' . $node->nid, 1);
     send_lead($source_id, $webform_fields, $send_mail);
   } else {
